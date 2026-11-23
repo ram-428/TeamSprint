@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowDown, ArrowUp, Trash2, X } from 'lucide-react';
 import clsx from 'clsx';
-import { Avatar, PriorityIcon, StatusChip, TypeIcon, relTime, Select } from '../ui';
+import { Avatar, PriorityIcon, StatusChip, TypeIcon, relTime, Select, Pagination, usePaged } from '../ui';
 import { api, errMsg, invalidate, toast } from '@/lib/api';
 
 type SortKey = 'key' | 'summary' | 'priority' | 'status' | 'assignee' | 'updatedAt' | 'dueDate';
@@ -17,7 +17,8 @@ export function IssueTable({ items, onOpen, statuses, users, onChanged, canBulk,
     return [...items].sort((a, b) => (val(a) > val(b) ? 1 : val(a) < val(b) ? -1 : 0) * sort.dir);
   }, [items, sort]);
   const toggle = (k: string) => setSel((s) => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
-  const all = rows.length > 0 && rows.every((r) => sel.has(r.key));
+  const pg = usePaged(rows, 25);
+  const all = pg.rows.length > 0 && pg.rows.every((r) => sel.has(r.key));
   const th = (k: SortKey, label: string, cls = '') => (
     <th className={clsx('select-none p-3 text-left text-[11.5px] font-semibold uppercase tracking-wider text-muted', cls)}>
       <button className="inline-flex items-center gap-1 hover:text-text" onClick={() => setSort(sort?.k === k ? (sort.dir === 1 ? { k, dir: -1 } : null) : { k, dir: 1 })}>{label}{sort?.k === k && (sort.dir === 1 ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}</button>
@@ -35,11 +36,11 @@ export function IssueTable({ items, onOpen, statuses, users, onChanged, canBulk,
       <div className="overflow-x-auto">
         <table className="w-full min-w-[820px] text-[13.5px]">
           <thead className="border-b border-[var(--border)]"><tr>
-            {canBulk && <th className="w-10 p-3"><input type="checkbox" aria-label="Select all" checked={all} onChange={() => setSel(all ? new Set() : new Set(rows.map((r) => r.key)))} className="accent-[var(--accent)]" /></th>}
+            {canBulk && <th className="w-10 p-3"><input type="checkbox" aria-label="Select all" checked={all} onChange={() => setSel(all ? new Set() : new Set(pg.rows.map((r) => r.key)))} className="accent-[var(--accent)]" /></th>}
             {th('key', 'Key')}{th('summary', 'Summary')}{th('status', 'Status')}{th('priority', 'Priority')}{th('assignee', 'Assignee')}{th('dueDate', 'Due')}{th('updatedAt', 'Updated')}
           </tr></thead>
           <tbody>
-            {rows.map((i, idx) => (
+            {pg.rows.map((i, idx) => (
               <motion.tr key={i._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(idx, 20) * 0.015 }} className={clsx('cursor-pointer border-b border-[var(--border)] transition-colors last:border-0 hover:bg-[var(--surface-2)]', sel.has(i.key) && 'bg-[var(--accent-soft)]')} onClick={() => onOpen(i.key)}>
                 {canBulk && <td className="p-3" onClick={(e) => e.stopPropagation()}><input type="checkbox" aria-label={`Select ${i.key}`} checked={sel.has(i.key)} onChange={() => toggle(i.key)} className="accent-[var(--accent)]" /></td>}
                 <td className="p-3"><span className="flex items-center gap-2"><TypeIcon type={i.type} size={17} /><span className="key font-semibold">{i.key}</span></span></td>
@@ -53,6 +54,7 @@ export function IssueTable({ items, onOpen, statuses, users, onChanged, canBulk,
             ))}
           </tbody>
         </table>
+        {rows.length > 25 && <Pagination {...pg.bar} />}
       </div>
       <AnimatePresence>
         {sel.size > 0 && (

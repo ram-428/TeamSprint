@@ -26,7 +26,7 @@ async function main() {
   await mongoose.connection.dropDatabase();
   await Promise.all([User, Org, Team, Project, Issue, Comment, Worklog, Sprint, Activity, Notification, Audit, Goal, SavedFilter, Automation].map((m) => m.syncIndexes()));
 
-  const pw = { super: await bcrypt.hash('Orbit@Super123!', 10), admin: await bcrypt.hash('Orbit@Admin123!', 10), demo: await bcrypt.hash('Orbit@Demo123!', 10) };
+  const pw = { super: await bcrypt.hash('Systemadmin@321', 10), admin: await bcrypt.hash('Orbit@Admin123!', 10), demo: await bcrypt.hash('Orbit@Demo123!', 10) };
 
   // ───────────────────────── Orgs & users ─────────────────────────
   const acme = await Org.create({ name: 'Acme Inc', slug: 'acme', plan: 'pro', maxUsers: 100, maxProjects: 50 });
@@ -35,7 +35,7 @@ async function main() {
   const mk = (name: string, email: string, org: any, role: string, title: string, hash: string, i: number, extra: any = {}) =>
     ({ name, email, orgId: org?._id, role, title, passwordHash: hash, color: COLORS[i % COLORS.length], lastLoginAt: ago(rnd() * 3), createdAt: ago(100 - i), ...extra });
 
-  const sa = await User.create(mk('Super Admin', 'superadmin@orbit.dev', null, 'member', 'Platform Owner', pw.super, 0, { platformRole: 'super_admin' }));
+  const sa = await User.create(mk('System Admin', 'netkathirtestmail@gmail.com', acme, 'org_admin', 'Platform Owner', pw.super, 0, { platformRole: 'super_admin' }));
   const U: Record<string, any> = {};
   const defs: [string, string, string, string, string][] = [
     ['admin', 'Alex Morgan', 'admin@acme.dev', 'org_admin', 'Head of Engineering'],
@@ -345,15 +345,7 @@ async function main() {
   console.log('\n✔ Seed complete', counts);
   console.log('\n  Credentials');
   console.log('  ─────────────────────────────────────────────────────────────');
-  console.log('  Super Admin   superadmin@orbit.dev      Orbit@Super123!');
-  console.log('  Org Admin     admin@acme.dev            Orbit@Admin123!');
-  console.log('  Scrum Master  priya.lead@acme.dev       Orbit@Demo123!');
-  console.log('  Product Owner marcus.po@acme.dev        Orbit@Demo123!');
-  console.log('  Developer     sara.dev@acme.dev         Orbit@Demo123!');
-  console.log('  QA            lena.qa@acme.dev          Orbit@Demo123!');
-  console.log('  Reporter      tom.reporter@acme.dev     Orbit@Demo123!');
-  console.log('  Viewer        vera.viewer@acme.dev      Orbit@Demo123!');
-  console.log('  Guest         guest@client.com          Orbit@Demo123!');
+  console.log('  System Admin  netkathirtestmail@gmail.com  (email code required)');
   await closeDB();
   process.exit(0);
 }

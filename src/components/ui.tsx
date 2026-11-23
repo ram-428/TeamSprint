@@ -100,7 +100,7 @@ export function ListSkeleton({ rows = 6 }: { rows?: number }) {
 export function EmptyState({ title, text, action, icon }: { title: string; text?: string; action?: ReactNode; icon?: ReactNode }) {
   return (
     <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
-      <div className="float mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--border)] bg-surface-2 text-accent shadow-[var(--glow)]">{icon || <Inbox size={28} />}</div>
+      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--border)] bg-surface-2 text-accent shadow-[var(--glow)]">{icon || <Inbox size={28} />}</div>
       <h3 className="text-[17px] font-semibold">{title}</h3>
       {text && <p className="mt-1 max-w-sm text-muted">{text}</p>}
       {action && <div className="mt-4">{action}</div>}
@@ -300,4 +300,29 @@ export function Select({ value, onChange, options, className, disabled, placehol
         </AnimatePresence>, document.body)}
     </div>
   );
+}
+
+/** Simple client-side pagination footer. */
+export function Pagination({ page, pageSize, total, onPage, onPageSize }: { page: number; pageSize: number; total: number; onPage: (p: number) => void; onPageSize?: (n: number) => void }) {
+  const pages = Math.max(1, Math.ceil(total / pageSize)); const from = total === 0 ? 0 : (page - 1) * pageSize + 1; const to = Math.min(total, page * pageSize);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] px-4 py-3 text-[13px] text-muted">
+      <span>{from}–{to} of {total}</span>
+      <div className="flex items-center gap-2">
+        {onPageSize && <select aria-label="Rows per page" className="input !h-8 !w-auto !py-0 text-[13px]" value={pageSize} onChange={(e) => onPageSize(Number(e.target.value))}>{Array.from(new Set([10, 25, 50, pageSize])).sort((a, b) => a - b).map((n) => <option key={n} value={n}>{n} / page</option>)}</select>}
+        <button className="btn btn-sm" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page">Prev</button>
+        <span className="min-w-[64px] text-center">Page {page} / {pages}</span>
+        <button className="btn btn-sm" disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="Next page">Next</button>
+      </div>
+    </div>
+  );
+}
+
+/** Client-side paging for a list. Spread `bar` into <Pagination />. */
+export function usePaged<T>(items: T[] | undefined, initialSize = 10) {
+  const [page, setPage] = useState(1); const [pageSize, setPageSize] = useState(initialSize);
+  const total = items?.length ?? 0; const pages = Math.max(1, Math.ceil(total / pageSize)); const cur = Math.min(page, pages);
+  const rows = (items || []).slice((cur - 1) * pageSize, cur * pageSize);
+  const bar = { page: cur, pageSize, total, onPage: setPage, onPageSize: (n: number) => { setPageSize(n); setPage(1); } };
+  return { rows, bar };
 }

@@ -16,12 +16,4 @@ The seed script refuses to reset any database whose name contains "ssd" or "temp
 ## Demo logins
 | Role | Email | Password |
 |---|---|---|
-| Super Admin | superadmin@orbit.dev | Orbit@Super123! |
-| Org Admin | admin@acme.dev | Orbit@Admin123! |
-| Scrum Master | priya.lead@acme.dev | Orbit@Demo123! |
-| Product Owner | marcus.po@acme.dev | Orbit@Demo123! |
-| Developer | sara.dev@acme.dev | Orbit@Demo123! |
-| QA | lena.qa@acme.dev | Orbit@Demo123! |
-| Reporter | tom.reporter@acme.dev | Orbit@Demo123! |
-| Viewer | vera.viewer@acme.dev | Orbit@Demo123! |
-| Guest | guest@client.com | Orbit@Demo123! |
+| System Admin | netkathirtestmail@gmail.com | Systemadmin@321 (+ emailed login code) |

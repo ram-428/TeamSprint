@@ -29,7 +29,7 @@ export function route(handler: Handler, opts: { auth?: boolean } = {}) {
         if (!user) throw new AppError(401, 'UNAUTHENTICATED', 'Please sign in');
       }
       const out = await handler(req, { user: user as AuthUser, params });
-      if (out instanceof NextResponse) return out;
+      if (out instanceof Response) return out as NextResponse;
       return ok(out ?? { done: true });
     } catch (e) {
       if (e instanceof AppError) return NextResponse.json({ ok: false, error: { code: e.code, message: e.message, fields: e.fields } }, { status: e.status });

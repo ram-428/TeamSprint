@@ -2,7 +2,10 @@ import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { route, AppError, audit } from '@/server/api';
 import { User } from '@/server/models';
-import { compare, signSession, COOKIE } from '@/server/auth';
+import { randomInt } from 'node:crypto';
+import { compare, hash, signSession, COOKIE } from '@/server/auth';
+import { sendLoginCode } from '@/server/mail';
+import { otpRequired, maskEmail } from '@/server/otp';
 
 const schema = z.object({ email: z.string().email('Enter a valid email'), password: z.string().min(1, 'Password is required'), next: z.string().optional() });
 
@@ -26,6 +29,14 @@ export const POST = route(async (req) => {
     throw generic;
   }
   if (u.status !== 'active') throw new AppError(403, 'SUSPENDED', 'This account is suspended. Contact your administrator.');
+  if (otpRequired(u.email)) {
+    const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+    u.otpHash = await hash(code); u.otpExpires = new Date(Date.now() + 10 * 60_000); u.otpTries = 0; await u.save();
+    if (process.env.NODE_ENV !== 'production') console.log(`[dev] login code for ${u.email}: ${code}`);
+    try { await sendLoginCode(u.email, u.name, code); } catch (e) { console.error('[mail] login code failed', e); throw new AppError(502, 'MAIL_FAILED', 'Could not send the verification email. Try again shortly.'); }
+    const challenge = await signSession({ uid: String(u._id), tv: -1 }, '10m');
+    return NextResponse.json({ ok: true, data: { otpRequired: true, challenge, email: maskEmail(u.email) } });
+  }
   u.failed = 0; u.lockUntil = undefined; u.lastLoginAt = new Date(); await u.save();
   const token = await signSession({ uid: String(u._id), tv: u.tokenVersion || 0 });
   await audit({ id: String(u._id), orgId: u.orgId ? String(u.orgId) : null } as any, 'auth.login', u.email);

@@ -12,9 +12,10 @@ export const User = model<any>('User', S({
   name: String, email: { type: String, unique: true, lowercase: true, index: true },
   passwordHash: String, orgId: { type: oid, index: true }, role: { type: String, default: 'member' }, // org_admin|member|guest
   platformRole: { type: String, default: 'user' }, status: { type: String, default: 'active' },
-  title: String, color: String, theme: { type: String, default: 'dark' },
+  title: String, color: String, theme: { type: String, default: 'simple' },
   failed: { type: Number, default: 0 }, lockUntil: Date, lastLoginAt: Date, tokenVersion: { type: Number, default: 0 },
   teamIds: [oid], capacityHours: { type: Number, default: 30 },
+  otpHash: String, otpExpires: Date, otpTries: { type: Number, default: 0 },
 }, opts));
 
 export const Org = model<any>('Org', S({

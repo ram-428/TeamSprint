@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { route, forbidden, AppError, audit } from '@/server/api';
 import { Org, User, Project, Issue } from '@/server/models';
 import { hash } from '@/server/auth';
+import { sendInviteMail } from '@/server/mail';
 
 const guard = (u: any) => { if (u.platformRole !== 'super_admin') throw forbidden(); };
 
@@ -28,5 +29,6 @@ export const POST = route(async (req, { user }) => {
   const tmp = 'Welcome-' + Math.random().toString(36).slice(2, 8) + '1A';
   await User.create({ name: d.adminName, email: d.adminEmail, passwordHash: await hash(tmp), orgId: org._id, role: 'org_admin', color: '#7c5cff' });
   await audit(user, 'platform.org_created', d.name);
-  return { id: org._id, adminEmail: d.adminEmail, temporaryPassword: tmp };
+  const emailed = await sendInviteMail(d.adminEmail, d.adminName, tmp, user.name, d.name);
+  return { id: org._id, adminEmail: d.adminEmail, temporaryPassword: tmp, emailed };
 });

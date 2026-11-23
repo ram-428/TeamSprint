@@ -22,7 +22,7 @@ export function LoginBoard() {
   const total = CARDS.reduce((a, c) => a + c.pts, 0);
 
   return (
-    <div className="glass relative w-full max-w-[640px] overflow-hidden rounded-[26px] p-4" style={{ transform: 'translateZ(0)' }}>
+    <div className="glass relative w-full max-w-[780px] overflow-hidden rounded-[26px] p-4" style={{ transform: 'translateZ(0)' }}>
       <div className="mb-3 flex items-center gap-2 px-1">
         <span className="flex gap-1.5">{['#ff5f57', '#febc2e', '#28c840'].map((c) => <i key={c} className="h-2.5 w-2.5 rounded-full" style={{ background: c }} />)}</span>
         <span className="ml-2 text-[12px] font-semibold text-muted">Sprint 12 · Checkout & SSO</span>

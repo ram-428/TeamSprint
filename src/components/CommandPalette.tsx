@@ -30,7 +30,7 @@ export function CommandPalette({ open, onClose, onCreate, toggleTheme }: { open:
       { id: 'a-search', group: 'Go to', label: 'Advanced search (OQL)', hint: 'G S', icon: <Filter size={16} />, run: go('/search') },
       { id: 'a-inbox', group: 'Go to', label: 'Inbox', hint: 'G N', icon: <Bell size={16} />, run: go('/notifications') },
       ...(me.role !== 'guest' ? [{ id: 'a-goals', group: 'Go to', label: 'Goals & OKRs', icon: <Target size={16} />, run: go('/goals') }] : []),
-      { id: 'a-theme', group: 'Actions', label: 'Toggle light / dark theme', icon: <Moon size={16} />, run: () => { toggleTheme(); onClose(); } },
+      { id: 'a-theme', group: 'Actions', label: 'Switch theme (dark · light · simple)', icon: <Moon size={16} />, run: () => { toggleTheme(); onClose(); } },
     ];
     const needle = q.trim().toLowerCase();
     const filtered = needle ? actions.filter((a) => a.label.toLowerCase().includes(needle)) : actions;

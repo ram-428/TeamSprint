@@ -11,7 +11,7 @@ export const PATCH = route(async (req, { user }) => {
   const patch: Record<string, unknown> = {};
   if (typeof b.name === 'string' && b.name.trim()) patch.name = b.name.trim().slice(0, 80);
   if (typeof b.title === 'string') patch.title = b.title.slice(0, 80);
-  if (['dark', 'light'].includes(b.theme)) patch.theme = b.theme;
+  if (['dark', 'light', 'simple'].includes(b.theme)) patch.theme = b.theme;
   await User.updateOne({ _id: user.id }, patch);
   return { done: true };
 });

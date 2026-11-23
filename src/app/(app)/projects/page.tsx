@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Plus, Search, Star, Rocket, Smartphone, LifeBuoy, Megaphone, Server, Globe, LayoutGrid, List, Lock, ArrowRight, Check } from 'lucide-react';
 import clsx from 'clsx';
 import { api, errMsg, invalidate, toast, useApi, ApiError } from '@/lib/api';
-import { Avatar, Card, EmptyState, Field, Modal, Select, PageHeader, ProgressBar, Skeleton, Spinner } from '@/components/ui';
+import { Avatar, Card, EmptyState, Field, Modal, Select, PageHeader, ProgressBar, Skeleton, Spinner, Pagination, usePaged } from '@/components/ui';
 import { useMe } from '@/components/UserContext';
 
 const ICONS: Record<string, any> = { rocket: Rocket, smartphone: Smartphone, 'life-buoy': LifeBuoy, megaphone: Megaphone, server: Server, globe: Globe };
@@ -16,6 +16,8 @@ export default function ProjectsPage() {
   const me = useMe(); const { data, loading, mutate } = useApi<any[]>('/api/projects');
   const [q, setQ] = useState(''); const [view, setView] = useState<'grid' | 'table'>('grid'); const [create, setCreate] = useState(false);
   const list = useMemo(() => (data || []).filter((p) => (p.name + p.key).toLowerCase().includes(q.toLowerCase())).sort((a, b) => Number(b.starred) - Number(a.starred)), [data, q]);
+
+  const pg = usePaged(list, 12);
 
   async function star(p: any, e: React.MouseEvent) {
     e.preventDefault(); e.stopPropagation();
@@ -33,8 +35,8 @@ export default function ProjectsPage() {
       {loading ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-44" />)}</div>
         : list.length === 0 ? <Card><EmptyState title={q ? 'No projects match' : 'No projects yet'} text={q ? 'Try a different search.' : 'Create your first project to start planning work.'} action={!q && me.role !== 'guest' && <button className="btn btn-primary" onClick={() => setCreate(true)}><Plus size={16} />New project</button>} /></Card>
         : view === 'grid' ? (
-          <motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.05 } } }} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {list.map((p) => {
+          <><motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.05 } } }} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {pg.rows.map((p) => {
               const I = ICONS[p.icon] || Rocket; const pct = p.total ? (p.done / p.total) * 100 : 0;
               return (
                 <motion.div key={p._id} variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 300, damping: 24 }}>
@@ -54,9 +56,10 @@ export default function ProjectsPage() {
               );
             })}
           </motion.div>
+          <Card className="mt-4"><Pagination {...pg.bar} /></Card></>
         ) : (
           <Card className="overflow-hidden"><table className="w-full text-left text-[13.5px]"><thead className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-muted"><tr><th className="p-4">Name</th><th>Key</th><th>Type</th><th>Lead</th><th>Progress</th><th /></tr></thead>
-            <tbody>{list.map((p) => <tr key={p._id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"><td className="p-4"><Link href={`/projects/${p.key}/board`} className="flex items-center gap-2.5 font-semibold"><span className="h-3 w-3 rounded" style={{ background: p.color }} />{p.name}</Link></td><td className="key">{p.key}</td><td>{TYPE_LABEL[p.type]}</td><td><div className="flex items-center gap-2"><Avatar user={p.lead} size={22} />{p.lead?.name}</div></td><td className="w-48"><ProgressBar value={p.total ? (p.done / p.total) * 100 : 0} color={p.color} /></td><td><button onClick={(e) => star(p, e)} aria-label="Star"><Star size={15} className={p.starred ? 'fill-[var(--warning)] text-warning' : 'text-faint'} /></button></td></tr>)}</tbody></table></Card>
+            <tbody>{pg.rows.map((p) => <tr key={p._id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"><td className="p-4"><Link href={`/projects/${p.key}/board`} className="flex items-center gap-2.5 font-semibold"><span className="h-3 w-3 rounded" style={{ background: p.color }} />{p.name}</Link></td><td className="key">{p.key}</td><td>{TYPE_LABEL[p.type]}</td><td><div className="flex items-center gap-2"><Avatar user={p.lead} size={22} />{p.lead?.name}</div></td><td className="w-48"><ProgressBar value={p.total ? (p.done / p.total) * 100 : 0} color={p.color} /></td><td><button onClick={(e) => star(p, e)} aria-label="Star"><Star size={15} className={p.starred ? 'fill-[var(--warning)] text-warning' : 'text-faint'} /></button></td></tr>)}</tbody></table><Pagination {...pg.bar} /></Card>
         )}
       <CreateProject open={create} onClose={() => setCreate(false)} />
     </div>

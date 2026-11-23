@@ -55,6 +55,47 @@
   color-scheme: light;
 }
 
+/* Simple: flat, minimal, neutral – no gradients, glass or glow */
+[data-theme='simple'] {
+  --bg: #f7f7f8;
+  --bg-2: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f1f2f4;
+  --surface-solid: #ffffff;
+  --border: #e4e6ea;
+  --border-strong: #cfd3da;
+  --text: #1a1d24;
+  --text-muted: #5b6270;
+  --text-faint: #8b92a0;
+  --accent: #2563eb;
+  --accent-2: #2563eb;
+  --accent-soft: #e8efff;
+  --success: #16a34a;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --info: #2563eb;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --glow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+  --aurora-a: transparent;
+  --aurora-b: transparent;
+  --aurora-c: transparent;
+  --grid: transparent;
+  color-scheme: light;
+}
+[data-theme='simple'] .aurora { background: var(--bg); }
+[data-theme='simple'] .aurora::before, [data-theme='simple'] .aurora i { display: none; }
+[data-theme='simple'] .glass { backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: var(--shadow); background: var(--surface); }
+[data-theme='simple'] .spot::after { display: none; }
+[data-theme='simple'] .btn-primary { background: var(--accent); box-shadow: none; }
+[data-theme='simple'] .btn-primary:hover { background: #1d4ed8; box-shadow: none; }
+[data-theme='simple'] .grad-text { background: none; color: var(--accent); -webkit-background-clip: border-box; background-clip: border-box; }
+[data-theme='simple'] .grad-bar { background: var(--accent); }
+/* Simple = calm: stop decorative looping animations (spinners are untouched) */
+[data-theme='simple'] .float, [data-theme='simple'] .shine, [data-theme='simple'] .shimmer-text, [data-theme='simple'] .pulse-dot::after,
+[data-theme='simple'] [aria-hidden='true'], [data-theme='simple'] [aria-hidden='true'] > * { animation: none !important; }
+[data-theme='simple'] .shine { display: none; }
+[data-theme='simple'] div[aria-hidden][style*='conic-gradient'] { background: var(--border-strong) !important; opacity: 1; }
+
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  LayoutDashboard, FolderKanban, Search, Bell, Plus, Sun, Moon, LogOut, Settings, Target, Gauge, ShieldCheck, Building2, ChevronsLeft, ChevronsRight,
+  LayoutDashboard, FolderKanban, Search, Bell, Plus, Sun, Moon, Contrast, LogOut, Settings, Target, Gauge, ShieldCheck, Building2, ChevronsLeft, ChevronsRight,
   Command, Filter, Eye, X, UserCircle2, Menu, HelpCircle,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -19,13 +19,13 @@ type NavItem = { href: string; label: string; icon: any; match?: string };
 
 export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const path = usePathname(); const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false); const [mobile, setMobile] = useState(false);
+  const [ready, setReady] = useState(false); const [collapsed, setCollapsed] = useState(false); const [mobile, setMobile] = useState(false);
   const [palette, setPalette] = useState(false); const [create, setCreate] = useState(false); const [help, setHelp] = useState(false);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light' | 'simple'>('simple');
 
-  useEffect(() => { try { setCollapsed(localStorage.getItem('orbit-collapsed') === '1'); setTheme((localStorage.getItem('orbit-theme') as any) || 'dark'); } catch { /* ignore */ } }, []);
+  useEffect(() => { try { setCollapsed(localStorage.getItem('orbit-collapsed') === '1'); setTheme((localStorage.getItem('orbit-theme') as any) || 'simple'); } catch { /* ignore */ } const id = requestAnimationFrame(() => setReady(true)); return () => cancelAnimationFrame(id); }, []);
   useEffect(() => { setMobile(false); }, [path]);
-  const toggleTheme = () => { const t = theme === 'dark' ? 'light' : 'dark'; setTheme(t); document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('orbit-theme', t); } catch { /* ignore */ } };
+  const toggleTheme = () => { const t = theme === 'dark' ? 'light' : theme === 'light' ? 'simple' : 'dark'; setTheme(t); document.documentElement.setAttribute('data-theme', t); try { localStorage.setItem('orbit-theme', t); } catch { /* ignore */ } };
   const toggleCollapse = () => setCollapsed((c) => { try { localStorage.setItem('orbit-collapsed', c ? '0' : '1'); } catch { /* ignore */ } return !c; });
 
   // keyboard shortcuts
@@ -89,7 +89,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
       )}
       <div className={clsx('min-h-screen', me.impersonatedBy && 'pt-10')}>
         {/* desktop sidebar */}
-        <motion.aside animate={{ width: collapsed ? 84 : 248 }} transition={{ type: 'spring', stiffness: 360, damping: 36 }} className={clsx('glass fixed bottom-3 left-3 z-40 hidden overflow-hidden rounded-[24px] lg:block', me.impersonatedBy ? 'top-[52px]' : 'top-3')}>{sidebar}</motion.aside>
+        <motion.aside animate={{ width: collapsed ? 84 : 248 }} transition={ready ? { type: 'spring', stiffness: 360, damping: 36 } : { duration: 0 }} className={clsx('glass fixed bottom-3 left-3 z-40 hidden overflow-hidden rounded-[24px] lg:block', me.impersonatedBy ? 'top-[52px]' : 'top-3')}>{sidebar}</motion.aside>
         {/* mobile drawer */}
         <AnimatePresence>
           {mobile && (
@@ -100,7 +100,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
           )}
         </AnimatePresence>
 
-        <div className={clsx('transition-[padding] duration-300', collapsed ? 'lg:pl-[108px]' : 'lg:pl-[272px]')}>
+        <div className={clsx(ready && 'transition-[padding] duration-300', collapsed ? 'lg:pl-[108px]' : 'lg:pl-[272px]')}>
           <header className="sticky top-0 z-30 px-4 pt-3 lg:pr-5">
             <div className="glass flex h-[58px] items-center gap-3 rounded-[20px] px-3">
               <button className="btn btn-ghost btn-icon lg:hidden" aria-label="Open menu" onClick={() => setMobile(true)}><Menu size={19} /></button>
@@ -109,7 +109,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
               </button>
               <div className="ml-auto flex items-center gap-1.5">
                 <button className="btn btn-ghost btn-icon hidden sm:inline-flex" aria-label="Keyboard shortcuts" onClick={() => setHelp(true)}><HelpCircle size={18} /></button>
-                <button className="btn btn-ghost btn-icon" aria-label="Toggle theme" onClick={toggleTheme}><AnimatePresence mode="wait" initial={false}><motion.span key={theme} initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.18 }}>{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</motion.span></AnimatePresence></button>
+                <button className="btn btn-ghost btn-icon" aria-label="Toggle theme" onClick={toggleTheme}><AnimatePresence mode="wait" initial={false}><motion.span key={theme} initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.18 }}>{theme === 'dark' ? <Sun size={18} /> : theme === 'light' ? <Contrast size={18} /> : <Moon size={18} />}</motion.span></AnimatePresence></button>
                 <Bell2 />
                 <Dropdown trigger={({ toggle }) => <button onClick={toggle} className="ml-1 flex items-center gap-2 rounded-xl p-1 pr-2 transition-colors hover:bg-[var(--surface-2)]" aria-label="Account menu"><Avatar user={me} size={32} /></button>}>
                   {(close) => (

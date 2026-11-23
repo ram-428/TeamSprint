@@ -46,7 +46,7 @@ export async function getUser(): Promise<AuthUser | null> {
   if (!u || u.status !== 'active' || (u.tokenVersion ?? 0) !== (s.tv ?? 0)) { userCache.set(ck, { at: Date.now(), u: null }); return null; }
   const res: AuthUser = {
     id: String(u._id), name: u.name, email: u.email, orgId: u.orgId ? String(u.orgId) : null,
-    role: u.role, platformRole: u.platformRole, title: u.title, color: u.color, theme: u.theme || 'dark',
+    role: u.role, platformRole: u.platformRole, title: u.title, color: u.color, theme: u.theme || 'simple',
     impersonatedBy: s.imp,
   };
   userCache.set(ck, { at: Date.now(), u: res });
