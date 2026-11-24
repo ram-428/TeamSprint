@@ -1,0 +1,109 @@
+'use client';
+import { use, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { CheckCircle2, Flag, Plus, Search, Target, Users } from 'lucide-react';
+import clsx from 'clsx';
+import { useProject } from '@/components/ProjectContext';
+import { Board } from '@/components/board/Board';
+import { IssueDrawer } from '@/components/issue/IssueDrawer';
+import { CreateIssueModal } from '@/components/issue/CreateIssueModal';
+import { Avatar, Card, EmptyState, Modal, ProgressRing, Skeleton, Spinner, Select } from '@/components/ui';
+import { api, errMsg, invalidate, toast, useApi } from '@/lib/api';
+import { useMe } from '@/components/UserContext';
+
+export default function BoardPage({ params }: { params: Promise<{ key: string }> }) {
+  const { key } = use(params); const me = useMe(); const { project } = useProject();
+  const router = useRouter(); const path = usePathname(); const sp = useSearchParams();
+  const selected = sp.get('selected');
+  const { data, mutate, loading } = useApi<{ items: any[] }>(`/api/issues?project=${key}`);
+  const { data: sprints, reload: reloadSprints } = useApi<any[]>(project.type === 'scrum' ? `/api/projects/${key}/sprints` : null);
+  const [q, setQ] = useState(''); const [mine, setMine] = useState(false); const [lanes, setLanes] = useState(false);
+  const [create, setCreate] = useState<{ open: boolean; status?: string }>({ open: false });
+  const [complete, setComplete] = useState(false);
+  const ab = project.abilities;
+  const active = sprints?.find((s) => s.state === 'active');
+  useEffect(() => { try { setLanes(localStorage.getItem(`orbit-lanes-${key}`) === '1'); } catch { /* ignore */ } }, [key]);
+
+  const all = useMemo(() => data?.items ?? [], [data]);
+  const epics = useMemo(() => Object.fromEntries(all.filter((i) => i.type === 'epic').map((i) => [i._id, i.summary])), [all]);
+  const visible = useMemo(() => {
+    let l = all.filter((i) => i.type !== 'epic');
+    if (project.type === 'scrum') l = active ? l.filter((i) => String(i.sprintId) === String(active._id)) : [];
+    if (mine) l = l.filter((i) => i.assigneeId === me.id);
+    if (q) l = l.filter((i) => (i.summary + i.key).toLowerCase().includes(q.toLowerCase()));
+    return l;
+  }, [all, active, mine, q, project.type, me.id]);
+
+  const setSel = (k: string | null) => { const p = new URLSearchParams(sp.toString()); k ? p.set('selected', k) : p.delete('selected'); router.replace(`${path}?${p}`, { scroll: false }); };
+  const onChanged = (fn: (l: any[]) => any[]) => mutate({ items: fn(all) });
+  const swimlanes = useMemo(() => {
+    if (!lanes) return [{ id: 'all', label: '', issues: visible }];
+    const map = new Map<string, any[]>();
+    for (const i of visible) { const k = i.assignee?._id || 'none'; map.set(k, [...(map.get(k) || []), i]); }
+    return [...map.entries()].map(([id, issues]) => ({ id, label: id === 'none' ? 'Unassigned' : issues[0].assignee.name, user: issues[0].assignee, issues }));
+  }, [visible, lanes]);
+
+  const total = visible.reduce((a, i) => a + (i.points || 0), 0), done = visible.filter((i) => i.statusCategory === 'done').reduce((a, i) => a + (i.points || 0), 0);
+  const daysLeft = active ? Math.max(0, Math.ceil((+new Date(active.endDate) - Date.now()) / 864e5)) : 0;
+
+  return (
+    <div>
+      {project.type === 'scrum' && (
+        <Card className="mb-5 flex flex-wrap items-center gap-5 p-4">
+          {!sprints ? <Skeleton className="h-14 w-full" /> : active ? (<>
+            <ProgressRing value={total ? (done / total) * 100 : 0} size={58} />
+            <div className="min-w-0 flex-1"><div className="flex items-center gap-2"><h2 className="text-[17px] font-semibold">{active.name}</h2><span className="chip !text-success"><span className="pulse-dot h-1.5 w-1.5 rounded-full bg-success text-success" />Active</span></div>
+              <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted"><Target size={13} />{active.goal || 'No sprint goal set'}</p></div>
+            <div className="flex gap-6 text-center"><div><div className="text-[22px] font-semibold tabular-nums">{daysLeft}</div><div className="text-[11px] uppercase tracking-wider text-muted">days left</div></div><div><div className="text-[22px] font-semibold tabular-nums">{done}<span className="text-muted">/{total}</span></div><div className="text-[11px] uppercase tracking-wider text-muted">points</div></div></div>
+            {ab['sprint.manage'] && <button className="btn" onClick={() => setComplete(true)}><CheckCircle2 size={15} /> Complete sprint</button>}
+          </>) : <div className="flex flex-1 items-center justify-between gap-4"><div><h2 className="text-[17px] font-semibold">No active sprint</h2><p className="text-[13px] text-muted">Plan a sprint in the backlog to see its board here.</p></div><Link href={`/projects/${key}/backlog`} className="btn btn-primary">Go to backlog</Link></div>}
+        </Card>
+      )}
+
+      <div className="mb-4 flex flex-wrap items-center gap-2.5">
+        <div className="relative"><Search size={15} className="absolute left-3 top-[11px] text-faint" /><input aria-label="Filter board" className="input !h-9 !w-60 !pl-9" placeholder="Filter issues" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        <button aria-pressed={mine} onClick={() => setMine(!mine)} className={clsx('btn btn-sm', mine && '!border-[var(--accent)] !bg-[var(--accent-soft)]')}><Avatar user={me} size={18} /> Only my issues</button>
+        <button aria-pressed={lanes} onClick={() => { setLanes(!lanes); try { localStorage.setItem(`orbit-lanes-${key}`, lanes ? '0' : '1'); } catch { /* ignore */ } }} className={clsx('btn btn-sm', lanes && '!border-[var(--accent)] !bg-[var(--accent-soft)]')}><Users size={14} /> Swimlanes by assignee</button>
+        <span className="ml-auto flex items-center gap-3 text-[12.5px] text-muted"><span className="flex items-center gap-1"><Flag size={12} className="text-warning" />{visible.filter((i) => i.flagged).length} flagged</span><span>{visible.length} issues</span></span>
+        {ab['issue.create'] && <button className="btn btn-primary btn-sm" onClick={() => setCreate({ open: true })}><Plus size={15} /> Create issue</button>}
+      </div>
+
+      {loading ? <div className="flex gap-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[420px] w-[300px] shrink-0" />)}</div>
+        : visible.length === 0 && (project.type !== 'scrum' || active) && !q && !mine ? <Card><EmptyState title="Nothing on the board yet" text="Create your first issue to get things moving." action={ab['issue.create'] && <button className="btn btn-primary" onClick={() => setCreate({ open: true })}><Plus size={15} />Create issue</button>} /></Card>
+        : project.type === 'scrum' && !active ? null
+        : (
+          <div className="space-y-6">
+            {swimlanes.map((l: any) => (
+              <div key={l.id}>
+                {lanes && <div className="mb-2 flex items-center gap-2.5 text-[13px] font-semibold"><Avatar user={l.user} size={24} />{l.label}<span className="chip">{l.issues.length}</span></div>}
+                <Board dragId={`board-${key}-${l.id}`} project={project} issues={l.issues} epics={epics} canMove={ab['issue.transition']} onOpen={setSel} onChanged={onChanged} onCreate={ab['issue.create'] ? (s) => setCreate({ open: true, status: s }) : undefined} />
+              </div>
+            ))}
+          </div>
+        )}
+
+      <IssueDrawer issueKey={selected} onClose={() => setSel(null)} />
+      <CreateIssueModal open={create.open} onClose={() => setCreate({ open: false })} projectKey={key} defaults={{ sprintId: active?._id || '' }} onCreated={() => mutate()} />
+      {active && <CompleteSprint open={complete} onClose={() => setComplete(false)} sprint={active} sprints={sprints || []} issues={all.filter((i) => String(i.sprintId) === String(active._id))} projectKey={key} onDone={() => { reloadSprints(); mutate(); }} />}
+    </div>
+  );
+}
+
+function CompleteSprint({ open, onClose, sprint, sprints, issues, projectKey, onDone }: { open: boolean; onClose: () => void; sprint: any; sprints: any[]; issues: any[]; projectKey: string; onDone: () => void }) {
+  const [moveTo, setMoveTo] = useState('backlog'); const [busy, setBusy] = useState(false);
+  const done = issues.filter((i) => i.statusCategory === 'done'); const open_ = issues.filter((i) => i.statusCategory !== 'done');
+  const future = sprints.filter((s) => s.state === 'future');
+  async function go() {
+    setBusy(true);
+    try { await api(`/api/sprints/${sprint._id}`, { method: 'PATCH', body: { action: 'complete', moveTo } }); invalidate('/api/'); toast.success(`${sprint.name} completed`); onClose(); onDone(); }
+    catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
+  }
+  void projectKey;
+  return (
+    <Modal open={open} onClose={onClose} title={`Complete ${sprint.name}`} width={500} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={go}>{busy && <Spinner />}Complete sprint</button></>}>
+      <div className="mb-5 grid grid-cols-2 gap-3"><div className="rounded-2xl border border-success/30 bg-success/10 p-4 text-center"><div className="text-[28px] font-semibold text-success">{done.length}</div><div className="text-xs text-muted">completed issues</div></div><div className="rounded-2xl border border-warning/30 bg-warning/10 p-4 text-center"><div className="text-[28px] font-semibold text-warning">{open_.length}</div><div className="text-xs text-muted">open issues</div></div></div>
+      {open_.length > 0 ? (<><label className="label">Move open issues to</label><Select aria-label="Move open issues to" value={moveTo} onChange={setMoveTo} options={[{ value: 'backlog', label: 'Backlog' }, ...future.map((s) => ({ value: s._id, label: s.name }))]} /></>) : <p className="text-muted">Everything is done. Nice work! 🎉</p>}
+    </Modal>
+  );
+}

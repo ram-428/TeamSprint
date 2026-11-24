@@ -1,0 +1,8 @@
+allowBuilds:
+  esbuild: true
+  mongodb-memory-server: false # dev-only embedded DB; production uses MONGODB_URI, so skip its binary download
+minimumReleaseAgeExclude:
+  - lucide-react@1.78.0
+overrides:
+  # next@15 pins postcss@8.4.31 (vulnerable); force the patched release
+  postcss: ^8.5.33

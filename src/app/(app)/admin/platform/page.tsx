@@ -1,0 +1,91 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Activity, Building2, FolderKanban, ListChecks, Plus, ShieldAlert, Users, Eye, Search } from 'lucide-react';
+import { api, errMsg, toast, useApi, ApiError } from '@/lib/api';
+import { Avatar, Card, ConfirmDialog, CountUp, EmptyState, Field, Modal, PageHeader, Select, Skeleton, Spinner, Tabs, relTime, Dropdown, MenuItem, Pagination, usePaged } from '@/components/ui';
+import { useMe } from '@/components/UserContext';
+import { useRouter } from 'next/navigation';
+import { Forbidden, AuditTab } from '@/components/AdminShared';
+
+export default function Platform() {
+  const me = useMe(); const [tab, setTab] = useState<'overview' | 'orgs' | 'users' | 'audit'>('overview'); const orgFilter = me.orgId || ''; // follows the organization chosen in the top bar
+  useEffect(() => { try { const t = sessionStorage.getItem('platform-tab'); if (t) { sessionStorage.removeItem('platform-tab'); setTab(t as any); } } catch { /* ignore */ } }, []);
+  if (me.platformRole !== 'super_admin') return <Forbidden />;
+  return (
+    <div className="mx-auto max-w-[1280px]">
+      <PageHeader title="Platform console" subtitle={tab === 'orgs' ? 'Every organization on the platform' : `Showing ${me.orgName || 'the selected organization'} — change it from the organization menu in the top bar`} />
+      <div className="mb-5"><Tabs id="plat" value={tab} onChange={setTab} tabs={[{ id: 'overview', label: 'Overview' }, { id: 'orgs', label: 'Organizations' }, { id: 'users', label: 'Users' }, { id: 'audit', label: 'Audit log' }]} /></div>
+      {tab === 'overview' && <Overview orgId={orgFilter} />}{tab === 'orgs' && <Orgs onUsers={async (id) => { try { if (id !== me.orgId) await api('/api/admin/platform/context', { body: { orgId: id } }); sessionStorage.setItem('platform-tab', 'users'); window.location.href = '/admin/platform'; } catch (e) { toast.error(errMsg(e)); } }} />}{tab === 'users' && <UsersTab orgId={orgFilter} />}{tab === 'audit' && <AuditTab scope="platform" orgId={orgFilter} />}
+    </div>
+  );
+}
+
+const tip = { contentStyle: { background: 'var(--surface-solid)', border: '1px solid var(--border-strong)', borderRadius: 14, color: 'var(--text)', fontSize: 12.5 } };
+function Overview({ orgId }: { orgId: string }) {
+  const { data } = useApi<any>(`/api/admin/platform/stats${orgId ? `?orgId=${orgId}` : ''}`, { refreshMs: 30000 });
+  if (!data) return <div className="grid gap-4 md:grid-cols-3"><Skeleton className="h-28" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div>;
+  const t = data.totals;
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">{[['Organizations', t.orgs, Building2], ['Users', t.users, Users], ['Projects', t.projects, FolderKanban], ['Issues', t.issues, ListChecks], ['Active (24h)', t.activeDay, Activity], ['Lockouts (24h)', t.failedLogins, ShieldAlert]].map(([l, v, I]: any) => <Card key={l} spotlight className="p-4"><div className="flex items-center justify-between text-xs text-muted">{l}<I size={15} /></div><div className="mt-2 text-[30px] font-semibold leading-none"><CountUp value={v} /></div></Card>)}</div>
+      <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
+        <Card className="p-5"><h3 className="mb-3 font-semibold">Logins & new issues · 14 days</h3><div className="h-64"><ResponsiveContainer width="100%" height="100%"><AreaChart data={data.days}><defs><linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7c5cff" stopOpacity={0.5} /><stop offset="100%" stopColor="#7c5cff" stopOpacity={0} /></linearGradient><linearGradient id="gi" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#22d3ee" stopOpacity={0.45} /><stop offset="100%" stopColor="#22d3ee" stopOpacity={0} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="day" stroke="var(--text-faint)" tickLine={false} axisLine={false} fontSize={11} /><YAxis stroke="var(--text-faint)" tickLine={false} axisLine={false} fontSize={11} width={28} /><Tooltip {...tip} /><Area dataKey="logins" stroke="#7c5cff" strokeWidth={2.5} fill="url(#gl)" name="Logins" /><Area dataKey="issues" stroke="#22d3ee" strokeWidth={2.5} fill="url(#gi)" name="Issues created" /></AreaChart></ResponsiveContainer></div></Card>
+        <Card className="p-5"><h3 className="mb-3 font-semibold">System health</h3><div className="space-y-3 text-[13.5px]">{[['Database', <span key="d" className="flex items-center gap-2 font-semibold text-success"><span className="pulse-dot h-2 w-2 rounded-full bg-success text-success" />{data.health.db}</span>], ['Uptime', `${Math.floor(data.health.uptimeSec / 3600)}h ${Math.floor((data.health.uptimeSec % 3600) / 60)}m`], ['Memory', `${data.health.memoryMb} MB`], ['Node', data.health.node]].map(([k, v]: any) => <div key={k} className="flex justify-between"><span className="text-muted">{k}</span><span>{v}</span></div>)}</div>
+          <h3 className="mb-2 mt-6 font-semibold">Newest users</h3>{data.signups.map((u: any) => <div key={u._id} className="flex items-center gap-2.5 py-1.5"><Avatar user={u} size={26} /><div className="min-w-0"><div className="truncate text-[13px] font-medium">{u.name}</div><div className="truncate text-[11px] text-faint">{u.email}</div></div></div>)}</Card>
+      </div>
+      <Card className="p-5"><h3 className="mb-3 font-semibold">Recent activity</h3><div className="divide-y divide-[var(--border)]">{data.recent.map((r: any) => <div key={r._id} className="flex items-center gap-3 py-2.5 text-[13px]"><span className="chip key">{r.action}</span><span className="min-w-0 flex-1 truncate text-muted">{r.actor} → {r.target}</span><span className="text-xs text-faint">{relTime(r.createdAt)}</span></div>)}</div></Card>
+    </div>
+  );
+}
+
+function Orgs({ onUsers }: { onUsers: (orgId: string) => void }) {
+  const { data, reload } = useApi<any[]>('/api/admin/platform/orgs'); const [open, setOpen] = useState(false); const [created, setCreated] = useState<any>(null); const pg = usePaged(data); const [edit, setEdit] = useState<any>(null); const [del, setDel] = useState<any>(null);
+  const patch = async (id: string, body: any) => { try { await api(`/api/admin/platform/orgs/${id}`, { method: 'PATCH', body }); reload(); toast.success('Organization updated'); } catch (e) { toast.error(errMsg(e)); } };
+  return (
+    <div>
+      <div className="mb-4 flex justify-end"><button className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={15} /> New organization</button></div>
+      <Card className="overflow-x-auto"><table className="w-full min-w-[820px] text-[13.5px]"><thead className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wider text-muted"><tr><th className="p-4">Organization</th><th>Plan</th><th>Users</th><th>Projects</th><th>Issues</th><th>Created</th><th>Status</th><th className="pr-4 text-right">Actions</th></tr></thead>
+        <tbody>{!data ? <tr><td colSpan={8} className="p-6"><Skeleton className="h-16" /></td></tr> : pg.rows.map((o) => <tr key={o._id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"><td className="p-4"><div className="font-semibold">{o.name}</div><div className="key">{o.slug}</div></td><td><Select aria-label={`Plan for ${o.name}`} className="!h-8 !w-32" value={o.plan} onChange={(v) => patch(o._id, { plan: v })} options={['free', 'pro', 'enterprise'].map((p) => ({ value: p, label: p }))} /></td><td><button className="underline-offset-2 hover:underline" title="View this organization's users" onClick={() => onUsers(String(o._id))}>{o.users}/{o.maxUsers}</button></td><td>{o.projects}/{o.maxProjects}</td><td>{o.issues}</td><td className="whitespace-nowrap text-xs text-muted">{o.createdAt ? new Date(o.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</td><td><span className={`chip capitalize ${o.status === 'active' ? '!text-success' : '!text-danger'}`}>{o.status}</span></td><td className="pr-4 text-right"><button className="btn btn-sm" onClick={() => patch(o._id, { status: o.status === 'active' ? 'suspended' : 'active' })}>{o.status === 'active' ? 'Suspend' : 'Reactivate'}</button> <button className="btn btn-sm" onClick={() => setEdit(o)}>Edit</button> <button className="btn btn-sm !text-danger" onClick={() => setDel(o)}>Delete</button></td></tr>)}</tbody></table>{data && data.length > 0 && <Pagination {...pg.bar} />}</Card>
+      <EditOrg org={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); }} />
+      <ConfirmDialog open={!!del} onClose={() => setDel(null)} danger title="Delete organization" confirmLabel="Delete forever" typeToConfirm={del?.name} message={<>This permanently deletes <b>{del?.name}</b> with all its users, projects, issues, comments and sprints. This cannot be undone.</>} onConfirm={async () => { try { await api(`/api/admin/platform/orgs/${del._id}`, { method: 'DELETE' }); toast.success('Organization deleted'); setDel(null); reload(); } catch (e) { toast.error(errMsg(e)); } }} />
+      <NewOrg open={open} onClose={() => setOpen(false)} onDone={(r) => { setOpen(false); setCreated(r); reload(); }} />
+      <Modal open={!!created} onClose={() => setCreated(null)} title="Organization created" width={460} footer={<button className="btn btn-primary" onClick={() => setCreated(null)}>Done</button>}>{created && <div className="space-y-3 text-[13.5px]"><p className="text-muted">Share these credentials with the new admin. The password is shown only once.</p><div className="rounded-xl border border-[var(--border)] p-3 font-mono"><div>{created.adminEmail}</div><div className="text-accent2">{created.temporaryPassword}</div></div></div>}</Modal>
+    </div>
+  );
+}
+function EditOrg({ org, onClose, onSaved }: { org: any; onClose: () => void; onSaved: () => void }) {
+  const [f, setF] = useState({ name: '', plan: 'pro', maxUsers: 100, maxProjects: 50 }); const [busy, setBusy] = useState(false); const [errs, setErrs] = useState<Record<string, string>>({});
+  useEffect(() => { if (org) { setF({ name: org.name, plan: org.plan, maxUsers: org.maxUsers, maxProjects: org.maxProjects }); setErrs({}); } }, [org]);
+  async function go() { setBusy(true); setErrs({}); try { await api(`/api/admin/platform/orgs/${org._id}`, { method: 'PATCH', body: { ...f, maxUsers: Number(f.maxUsers), maxProjects: Number(f.maxProjects) } }); toast.success('Organization updated'); onSaved(); } catch (e) { if (e instanceof ApiError && e.fields) setErrs(e.fields); else toast.error(errMsg(e)); } finally { setBusy(false); } }
+  return <Modal open={!!org} onClose={onClose} title="Edit organization" footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={go}>{busy && <Spinner />}Save</button></>}>
+    <div className="space-y-4"><Field label="Organization name" error={errs.name}><input autoFocus className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} aria-label="Organization name" /></Field><Field label="Plan"><Select aria-label="Plan" value={f.plan} onChange={(v) => setF({ ...f, plan: v })} options={['free', 'pro', 'enterprise'].map((p) => ({ value: p, label: p }))} /></Field>
+      <div className="grid gap-4 sm:grid-cols-2"><Field label="Max users" error={errs.maxUsers}><input type="number" min={1} className="input" value={f.maxUsers} onChange={(e) => setF({ ...f, maxUsers: e.target.value as any })} aria-label="Max users" /></Field><Field label="Max projects" error={errs.maxProjects}><input type="number" min={1} className="input" value={f.maxProjects} onChange={(e) => setF({ ...f, maxProjects: e.target.value as any })} aria-label="Max projects" /></Field></div></div></Modal>;
+}
+function NewOrg({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: (r: any) => void }) {
+  const [f, setF] = useState({ name: '', plan: 'pro', adminName: '', adminEmail: '' }); const [busy, setBusy] = useState(false); const [errs, setErrs] = useState<Record<string, string>>({});
+  async function go() { setBusy(true); setErrs({}); try { onDone(await api('/api/admin/platform/orgs', { body: f })); setF({ name: '', plan: 'pro', adminName: '', adminEmail: '' }); } catch (e) { if (e instanceof ApiError && e.fields) setErrs(e.fields); else toast.error(errMsg(e)); } finally { setBusy(false); } }
+  return <Modal open={open} onClose={onClose} title="New organization" footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={go}>{busy && <Spinner />}Create</button></>}>
+    <div className="space-y-4"><Field label="Organization name" error={errs.name}><input autoFocus className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} aria-label="Organization name" /></Field><Field label="Plan"><Select aria-label="Plan" value={f.plan} onChange={(v) => setF({ ...f, plan: v })} options={['free', 'pro', 'enterprise'].map((p) => ({ value: p, label: p }))} /></Field>
+      <div className="grid gap-4 sm:grid-cols-2"><Field label="Admin name" error={errs.adminName}><input className="input" value={f.adminName} onChange={(e) => setF({ ...f, adminName: e.target.value })} aria-label="Admin name" /></Field><Field label="Admin email" error={errs.adminEmail}><input type="email" className="input" value={f.adminEmail} onChange={(e) => setF({ ...f, adminEmail: e.target.value })} aria-label="Admin email" /></Field></div></div></Modal>;
+}
+
+function UsersTab({ orgId }: { orgId: string }) {
+  const router = useRouter(); const [q, setQ] = useState(''); const { data, reload } = useApi<any[]>(`/api/admin/platform/users?q=${encodeURIComponent(q)}${orgId ? `&orgId=${orgId}` : ''}`);
+  const pg = usePaged(data); const [imp, setImp] = useState<any>(null); const [reason, setReason] = useState(''); const [busy, setBusy] = useState(false); const [temp, setTemp] = useState<string | null>(null);
+  async function act(u: any, action: string) { try { const r: any = await api(`/api/admin/platform/users/${u._id}`, { method: 'PATCH', body: { action } }); if (r.temporaryPassword) setTemp(`${u.email} → ${r.temporaryPassword}`); else toast.success('Done'); reload(); } catch (e) { toast.error(errMsg(e)); } }
+  async function impersonate() { setBusy(true); try { await api('/api/admin/platform/impersonate', { body: { userId: imp._id, reason } }); window.location.href = '/dashboard'; } catch (e) { toast.error(e instanceof ApiError && e.fields ? Object.values(e.fields)[0] : errMsg(e)); setBusy(false); } }
+  void router;
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-3"><div className="relative w-full max-w-sm"><Search size={15} className="absolute left-3 top-[13px] text-faint" /><input aria-label="Search users" className="input !pl-9" placeholder="Search users" value={q} onChange={(e) => setQ(e.target.value)} /></div></div>
+      <Card className="overflow-x-auto"><table className="w-full min-w-[760px] text-[13.5px]"><thead className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wider text-muted"><tr><th className="p-4">User</th><th>Organization</th><th>Role</th><th>Status</th><th>Last login</th><th className="pr-4 text-right" /></tr></thead>
+        <tbody>{!data ? <tr><td colSpan={6} className="p-6"><Skeleton className="h-16" /></td></tr> : data.length === 0 ? <tr><td colSpan={6}><EmptyState title="No users found" /></td></tr> : pg.rows.map((u) => <tr key={u._id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"><td className="p-3"><div className="flex items-center gap-2.5"><Avatar user={u} size={30} /><div><div className="font-medium">{u.name}</div><div className="text-xs text-faint">{u.email}</div></div></div></td><td>{u.orgName || '—'}</td><td className="capitalize">{u.platformRole === 'super_admin' ? <span className="chip !text-accent">Super Admin</span> : u.role.replace('_', ' ')}</td><td><span className={`chip capitalize ${u.status === 'active' ? '!text-success' : '!text-danger'}`}>{u.status}{u.lockUntil && new Date(u.lockUntil) > new Date() ? ' · locked' : ''}</span></td><td className="text-xs text-muted">{u.lastLoginAt ? relTime(u.lastLoginAt) : 'never'}</td>
+          <td className="pr-3 text-right"><Dropdown trigger={({ toggle }) => <button onClick={toggle} className="btn btn-sm" aria-label={`Actions for ${u.name}`}>Manage</button>}>{(close) => <div className="w-52">{u.platformRole !== 'super_admin' && u.status === 'active' && <MenuItem icon={<Eye size={14} />} onClick={() => { close(); setImp(u); }}>Impersonate…</MenuItem>}<MenuItem onClick={() => { close(); act(u, u.status === 'active' ? 'suspend' : 'activate'); }}>{u.status === 'active' ? 'Suspend' : 'Activate'}</MenuItem><MenuItem onClick={() => { close(); act(u, 'unlock'); }}>Unlock account</MenuItem><MenuItem onClick={() => { close(); act(u, 'logout_all'); }}>Sign out everywhere</MenuItem><MenuItem onClick={() => { close(); act(u, 'reset_password'); }}>Reset password</MenuItem></div>}</Dropdown></td></tr>)}</tbody></table>{data && data.length > 0 && <Pagination {...pg.bar} />}</Card>
+      <ConfirmDialog open={!!imp} onClose={() => setImp(null)} title={`Impersonate ${imp?.name}`} confirmLabel="Start session" onConfirm={impersonate} message={<div><p className="mb-3">You'll see Team Sprint exactly as this user does. Every action is recorded in the audit log.</p><label className="label">Reason (required)</label><input className="input" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Investigating support ticket SUP-12" aria-label="Reason" /></div>} />
+      <Modal open={!!temp} onClose={() => setTemp(null)} title="Temporary password" width={440} footer={<button className="btn btn-primary" onClick={() => setTemp(null)}>Done</button>}><p className="mb-3 text-muted">Shown once. Share securely.</p><div className="rounded-xl border border-[var(--border)] p-3 font-mono text-[13px]">{temp}</div></Modal>
+      {busy && null}
+    </div>
+  );
+}
+
