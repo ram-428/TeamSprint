@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { KanbanSquare, ListTodo, Table2, GanttChartSquare, BarChart3, Settings2, Zap, Layers, Star, Lock } from 'lucide-react';
 import clsx from 'clsx';
 import { useApi, ErrorLike } from '@/lib/projectApi';
+import { api } from '@/lib/api';
 import { Skeleton, ErrorState } from '@/components/ui';
 import { ProjectProvider } from '@/components/ProjectContext';
 
@@ -31,7 +32,7 @@ export default function ProjectLayout({ children, params }: { children: React.Re
           <div className="flex items-center gap-3.5">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl text-[15px] font-bold text-white" style={{ background: `linear-gradient(135deg, ${project.color}, ${project.color}88)`, boxShadow: `0 10px 24px -10px ${project.color}` }}>{project.key.slice(0, 2)}</span>
             <div><div className="flex items-center gap-2"><h1 className="text-[24px] font-semibold leading-tight">{project.name}</h1>{project.visibility === 'private' && <Lock size={13} className="text-faint" />}
-              <button aria-label={project.starred ? 'Unstar' : 'Star'} className="rounded-lg p-1 text-faint hover:text-warning" onClick={async () => { mutate({ ...project, starred: !project.starred }); await fetch(`/api/projects/${key}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ starred: !project.starred }) }); }}><Star size={16} className={project.starred ? 'fill-[var(--warning)] text-warning' : ''} /></button></div>
+              <button aria-label={project.starred ? 'Unstar' : 'Star'} className="rounded-lg p-1 text-faint hover:text-warning" onClick={async () => { mutate({ ...project, starred: !project.starred }); await api(`/api/projects/${key}`, { method: 'PATCH', body: { starred: !project.starred } }).catch(() => mutate()); }}><Star size={16} className={project.starred ? 'fill-[var(--warning)] text-warning' : ''} /></button></div>
               <div className="flex items-center gap-2 text-[12.5px] text-muted"><span className="key font-semibold">{project.key}</span><span>·</span><span className="capitalize">{project.type.replace('_', ' ')}</span><span>·</span><span className="inline-flex items-center gap-1"><Layers size={12} />{project.members.length} members</span>{ab.role === 'viewer' && <span className="chip !h-5 !text-[10px]">read-only</span>}</div></div>
           </div>
         </div>

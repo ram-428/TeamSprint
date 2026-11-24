@@ -1,19 +1,25 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { loader } from './loader';
 
 export class ApiError extends Error {
   constructor(public status: number, public code: string, message: string, public fields?: Record<string, string>) { super(message); }
 }
 
-export async function api<T = any>(url: string, opts: { method?: string; body?: unknown } = {}): Promise<T> {
-  const res = await fetch(url, {
-    method: opts.method || (opts.body ? 'POST' : 'GET'),
-    headers: opts.body ? { 'Content-Type': 'application/json' } : undefined,
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-    credentials: 'same-origin',
-  });
+/** `silent: true` skips the global top loading bar (used for background revalidation). */
+export async function api<T = any>(url: string, opts: { method?: string; body?: unknown; silent?: boolean } = {}): Promise<T> {
+  if (!opts.silent) loader.start();
+  let res: Response;
   let json: any = null;
-  try { json = await res.json(); } catch { /* empty */ }
+  try {
+    res = await fetch(url, {
+      method: opts.method || (opts.body ? 'POST' : 'GET'),
+      headers: opts.body ? { 'Content-Type': 'application/json' } : undefined,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+      credentials: 'same-origin',
+    });
+    try { json = await res.json(); } catch { /* empty */ }
+  } finally { if (!opts.silent) loader.done(); }
   if (res.status === 401 && typeof window !== 'undefined' && !/^\/api\/auth\/(login|forgot-password|reset-password)/.test(url)) {
     window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
   }
@@ -39,7 +45,7 @@ export function useApi<T = any>(url: string | null, opts: { refreshMs?: number }
     if (!url) return;
     const my = ++seq.current;
     try {
-      const d = await api<T>(url);
+      const d = await api<T>(url, { silent: cache.has(url) });
       if (!alive.current || my !== seq.current) return;
       cache.set(url, d); setData(d); setError(null);
     } catch (e) { if (alive.current && my === seq.current) setError(e as ApiError); }
