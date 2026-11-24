@@ -56,7 +56,7 @@ export default function ForgotPasswordPage() {
         <Logo />
         <h1 className="mt-6 text-[26px] font-semibold">{challenge ? 'Reset your password' : 'Forgot your password?'}</h1>
         <p className="mb-6 mt-1 text-muted">
-          {challenge ? <>If <b>{sentTo}</b> has an account, we sent a 6-digit code to it. Enter it and choose a new password.</> : 'Enter your account email and we’ll send you a code to reset it.'}
+          {challenge ? <>We sent a 6-digit code to <b>{sentTo}</b>. Enter it and choose a new password. Check your spam folder if it doesn’t arrive.</> : 'Enter your account email and we’ll send you a code to reset it.'}
         </p>
 
         {err && <div role="alert" className="mb-4 rounded-xl border border-danger/40 bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">{err}</div>}

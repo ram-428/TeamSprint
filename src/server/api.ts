@@ -4,6 +4,7 @@ import { connectDB } from './db';
 import { getUser, type AuthUser } from './auth';
 import { Audit, Notification, Activity } from './models';
 import mongoose from 'mongoose';
+import { can } from './rbac';
 
 export class AppError extends Error {
   constructor(public status: number, public code: string, message: string, public fields?: Record<string, string>) { super(message); }
@@ -47,6 +48,20 @@ export const oid = (s: string) => {
   if (!mongoose.isValidObjectId(s)) throw bad('Invalid id');
   return new mongoose.Types.ObjectId(s);
 };
+
+/**
+ * Organization an org-level endpoint should act on. Org admins are fixed to their own organization;
+ * a super admin chooses one with `?orgId=` (required).
+ */
+export function targetOrg(user: AuthUser, req: Request, perm = 'org.manage_members'): string {
+  if (user.platformRole === 'super_admin') {
+    const id = new URL(req.url).searchParams.get('orgId');
+    if (!id || !mongoose.isValidObjectId(id)) throw bad('Select an organization');
+    return id;
+  }
+  if (!can(user, perm) || !user.orgId) throw forbidden();
+  return user.orgId;
+}
 
 export const audit = (u: AuthUser, action: string, target: string, meta?: unknown) =>
   Audit.create({ orgId: u.orgId, actorId: u.id, impersonatedBy: u.impersonatedBy, action, target, meta });

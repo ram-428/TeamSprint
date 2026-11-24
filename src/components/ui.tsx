@@ -243,11 +243,11 @@ export function MenuItem({ children, onClick, danger, icon, active }: { children
 const SEARCH_THRESHOLD = 7;
 const cap = (t: string) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
 /** Custom listbox (Siva Durga style): 40px trigger, portal panel that flips upward, search once the list is long, keyboard friendly. */
-export function Select({ value, onChange, options, className, disabled, placeholder = 'Select…', ...rest }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; className?: string; disabled?: boolean; placeholder?: string; 'aria-label'?: string }) {
+export function Select({ value, onChange, options, className, disabled, placeholder = 'Select…', searchable: forceSearch, ...rest }: { searchable?: boolean; value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; className?: string; disabled?: boolean; placeholder?: string; 'aria-label'?: string }) {
   const [open, setOpen] = useState(false); const [q, setQ] = useState(''); const [idx, setIdx] = useState(0);
   const [pos, setPos] = useState<{ left: number; width: number; top?: number; bottom?: number; maxH: number } | null>(null);
   const trig = useRef<HTMLButtonElement>(null); const search = useRef<HTMLInputElement>(null);
-  const selected = options.find((o) => o.value === value); const searchable = options.length > SEARCH_THRESHOLD;
+  const selected = options.find((o) => o.value === value); const searchable = forceSearch ?? options.length > SEARCH_THRESHOLD;
   const list = searchable && q.trim() ? options.filter((o) => o.label.toLowerCase().includes(q.trim().toLowerCase())) : options;
   useEffect(() => {
     if (!open) return;

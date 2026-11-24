@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { randomInt } from 'node:crypto';
-import mongoose from 'mongoose';
 import { route, AppError } from '@/server/api';
 import { User } from '@/server/models';
 import { hash, signSession } from '@/server/auth';
@@ -11,7 +10,7 @@ const schema = z.object({ email: z.string().trim().email('Enter a valid email') 
 const TTL = 10 * 60_000, COOLDOWN = 60_000;
 const hits = new Map<string, { n: number; t: number }>();
 
-/** Step 1 of "forgot password": emails a 6-digit code. Always answers the same way so it can't be used to probe which emails exist. */
+/** Step 1 of "forgot password": emails a 6-digit code to the account's address (rate-limited per IP, 60s resend cooldown). */
 export const POST = route(async (req) => {
   const { email } = schema.parse(await req.json());
   const ip = req.headers.get('x-forwarded-for') || 'local';
@@ -23,9 +22,9 @@ export const POST = route(async (req) => {
   if (!smtpConfigured() && !dev) throw new AppError(503, 'MAIL_UNAVAILABLE', 'Password reset by email is not available right now. Contact your administrator.');
 
   const u = await User.findOne({ email: email.toLowerCase() });
-  let uid = String(new mongoose.Types.ObjectId()); // decoy id for unknown / suspended accounts
-  if (u && u.status === 'active') {
-    uid = String(u._id);
+  if (!u) throw new AppError(404, 'NO_ACCOUNT', 'No account found with this email', { email: 'No account found with this email' });
+  if (u.status !== 'active') throw new AppError(403, 'SUSPENDED', 'This account is suspended. Contact your administrator.');
+  {
     // resend cooldown: otpExpires - TTL is when the last code was sent
     const sentAt = u.otpExpires ? +u.otpExpires - TTL : 0;
     if (Date.now() - sentAt < COOLDOWN) throw new AppError(429, 'TOO_SOON', `Please wait ${Math.ceil((COOLDOWN - (Date.now() - sentAt)) / 1000)}s before requesting another code.`);
@@ -37,6 +36,6 @@ export const POST = route(async (req) => {
       catch (e) { console.error('[mail] reset code failed', e); throw new AppError(502, 'MAIL_FAILED', 'Could not send the email. Try again shortly.'); }
     }
   }
-  const challenge = await signSession({ uid, tv: -2 }, '15m');
+  const challenge = await signSession({ uid: String(u._id), tv: -2 }, '15m');
   return { challenge, email: maskEmail(email) };
 }, { auth: false });

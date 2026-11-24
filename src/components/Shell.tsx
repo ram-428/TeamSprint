@@ -10,12 +10,34 @@ import {
 import clsx from 'clsx';
 import { Logo } from './Logo';
 import { UserProvider, type Me } from './UserContext';
-import { Avatar, Dropdown, MenuItem, Modal } from './ui';
+import { Avatar, Dropdown, MenuItem, Modal, Select } from './ui';
 import { CommandPalette } from './CommandPalette';
 import { CreateIssueModal } from './issue/CreateIssueModal';
 import { api, toast, useApi, errMsg } from '@/lib/api';
 
 type NavItem = { href: string; label: string; icon: any; match?: string };
+
+/** Super admin only: searchable list of every organization; picking one makes the whole app work inside it. */
+function OrgSwitcher({ me, path }: { me: Me; path: string }) {
+  const { data } = useApi<{ orgs: { _id: string; name: string; status: string }[] }>('/api/admin/platform/context');
+  const [busy, setBusy] = useState(false);
+  async function pick(orgId: string) {
+    if (busy || orgId === me.orgId) return; setBusy(true);
+    try {
+      await api('/api/admin/platform/context', { body: { orgId } });
+      // hard navigation so every cached list/board from the previous organization is dropped
+      const keep = ['/dashboard', '/projects', '/goals', '/workload', '/search', '/notifications', '/admin/org', '/admin/platform', '/settings'];
+      window.location.href = keep.includes(path) ? path : '/dashboard';
+    } catch (e) { toast.error(errMsg(e)); setBusy(false); }
+  }
+  return (
+    <div className="hidden shrink-0 items-center gap-2 md:flex" title="Organization you are working in">
+      <Building2 size={16} className="text-faint" />
+      <Select searchable aria-label="Working organization" className="!w-52" value={me.orgId || ''} onChange={pick} disabled={busy || !data} placeholder="Select organization"
+        options={(data?.orgs || []).map((o) => ({ value: o._id, label: o.status === 'active' ? o.name : `${o.name} (${o.status})` }))} />
+    </div>
+  );
+}
 
 export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const path = usePathname(); const router = useRouter();
@@ -55,7 +77,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   ];
   const admin: NavItem[] = [
     ...(me.platformRole === 'super_admin' ? [{ href: '/admin/platform', label: 'Platform', icon: ShieldCheck }] : []),
-    ...(me.role === 'org_admin' ? [{ href: '/admin/org', label: 'Organization', icon: Building2 }] : []),
+    ...(me.role === 'org_admin' || me.platformRole === 'super_admin' ? [{ href: '/admin/org', label: 'Organization', icon: Building2 }] : []),
   ];
 
   const exitImpersonation = async () => { try { await api('/api/admin/platform/impersonate', { method: 'DELETE' }); window.location.href = '/admin/platform'; } catch (e) { toast.error(errMsg(e)); } };
@@ -107,6 +129,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
               <button onClick={() => setPalette(true)} className="flex h-10 flex-1 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 text-left text-faint transition-colors hover:border-[var(--border-strong)] sm:max-w-[520px]" aria-label="Search">
                 <Search size={16} /><span className="flex-1 truncate text-[13.5px]">Search issues, projects, people…</span><kbd className="hidden sm:inline"><Command size={10} className="inline" /> K</kbd>
               </button>
+              {me.platformRole === 'super_admin' && !me.impersonatedBy && <OrgSwitcher me={me} path={path} />}
               <div className="ml-auto flex items-center gap-1.5">
                 <button className="btn btn-ghost btn-icon hidden sm:inline-flex" aria-label="Keyboard shortcuts" onClick={() => setHelp(true)}><HelpCircle size={18} /></button>
                 <button className="btn btn-ghost btn-icon" aria-label="Toggle theme" onClick={toggleTheme}><AnimatePresence mode="wait" initial={false}><motion.span key={theme} initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.18 }}>{theme === 'dark' ? <Sun size={18} /> : theme === 'light' ? <Contrast size={18} /> : <Moon size={18} />}</motion.span></AnimatePresence></button>

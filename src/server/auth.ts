@@ -2,10 +2,12 @@ import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import { connectDB } from './db';
-import { User } from './models';
+import { User, Org } from './models';
 
 const secret = () => new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-change-me-in-production-32ch');
 export const COOKIE = 'orbit_session';
+/** Super admin's "working organization": when set, every org-scoped API acts inside that organization. */
+export const ORG_COOKIE = 'orbit_org';
 
 export type Session = { uid: string; tv: number; imp?: string };
 
@@ -27,6 +29,8 @@ export const compare = (pw: string, h: string) => bcrypt.compare(pw, h);
 export type AuthUser = {
   id: string; name: string; email: string; orgId: string | null; role: string; platformRole: string;
   title?: string; color?: string; theme: string; impersonatedBy?: string;
+  /** super admin only: their own organization, and whether they are currently working inside a different one */
+  homeOrgId?: string | null; actingOrg?: boolean;
 };
 
 const userCache = new Map<string, { at: number; u: AuthUser | null }>();
@@ -34,11 +38,13 @@ export const dropUserCache = (id?: string) => (id ? userCache.delete(id) : userC
 
 /** Resolves the logged-in user from the cookie (null if none / invalid / suspended). */
 export async function getUser(): Promise<AuthUser | null> {
-  const token = (await cookies()).get(COOKIE)?.value;
+  const store = await cookies();
+  const token = store.get(COOKIE)?.value;
   if (!token) return null;
   const s = await verifySession(token);
   if (!s) return null;
-  const ck = `${s.uid}:${s.tv ?? 0}:${s.imp ?? ''}`;
+  const oc = s.imp ? '' : store.get(ORG_COOKIE)?.value || '';
+  const ck = `${s.uid}:${s.tv ?? 0}:${s.imp ?? ''}:${oc}`;
   const hit = userCache.get(ck);
   if (hit && Date.now() - hit.at < 10_000) return hit.u;
   await connectDB();
@@ -49,6 +55,10 @@ export async function getUser(): Promise<AuthUser | null> {
     role: u.role, platformRole: u.platformRole, title: u.title, color: u.color, theme: u.theme || 'simple',
     impersonatedBy: s.imp,
   };
+  if (u.platformRole === 'super_admin') {
+    res.homeOrgId = res.orgId;
+    if (/^[a-f0-9]{24}$/i.test(oc) && oc !== res.orgId && (await Org.exists({ _id: oc }))) { res.orgId = oc; res.role = 'org_admin'; res.actingOrg = true; }
+  }
   userCache.set(ck, { at: Date.now(), u: res });
   if (userCache.size > 500) userCache.clear();
   return res;

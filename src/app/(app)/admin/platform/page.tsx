@@ -9,20 +9,21 @@ import { useRouter } from 'next/navigation';
 import { Forbidden, AuditTab } from '@/components/AdminShared';
 
 export default function Platform() {
-  const me = useMe(); const [tab, setTab] = useState<'overview' | 'orgs' | 'users' | 'audit'>('overview'); const [orgFilter, setOrgFilter] = useState('');
+  const me = useMe(); const [tab, setTab] = useState<'overview' | 'orgs' | 'users' | 'audit'>('overview'); const orgFilter = me.orgId || ''; // follows the organization chosen in the top bar
+  useEffect(() => { try { const t = sessionStorage.getItem('platform-tab'); if (t) { sessionStorage.removeItem('platform-tab'); setTab(t as any); } } catch { /* ignore */ } }, []);
   if (me.platformRole !== 'super_admin') return <Forbidden />;
   return (
     <div className="mx-auto max-w-[1280px]">
-      <PageHeader title="Platform console" subtitle="Everything across every organization" />
+      <PageHeader title="Platform console" subtitle={tab === 'orgs' ? 'Every organization on the platform' : `Showing ${me.orgName || 'the selected organization'} — change it from the organization menu in the top bar`} />
       <div className="mb-5"><Tabs id="plat" value={tab} onChange={setTab} tabs={[{ id: 'overview', label: 'Overview' }, { id: 'orgs', label: 'Organizations' }, { id: 'users', label: 'Users' }, { id: 'audit', label: 'Audit log' }]} /></div>
-      {tab === 'overview' && <Overview />}{tab === 'orgs' && <Orgs onUsers={(id) => { setOrgFilter(id); setTab('users'); }} />}{tab === 'users' && <UsersTab orgId={orgFilter} setOrgId={setOrgFilter} />}{tab === 'audit' && <AuditTab scope="platform" />}
+      {tab === 'overview' && <Overview orgId={orgFilter} />}{tab === 'orgs' && <Orgs onUsers={async (id) => { try { if (id !== me.orgId) await api('/api/admin/platform/context', { body: { orgId: id } }); sessionStorage.setItem('platform-tab', 'users'); window.location.href = '/admin/platform'; } catch (e) { toast.error(errMsg(e)); } }} />}{tab === 'users' && <UsersTab orgId={orgFilter} />}{tab === 'audit' && <AuditTab scope="platform" orgId={orgFilter} />}
     </div>
   );
 }
 
 const tip = { contentStyle: { background: 'var(--surface-solid)', border: '1px solid var(--border-strong)', borderRadius: 14, color: 'var(--text)', fontSize: 12.5 } };
-function Overview() {
-  const { data } = useApi<any>('/api/admin/platform/stats', { refreshMs: 30000 });
+function Overview({ orgId }: { orgId: string }) {
+  const { data } = useApi<any>(`/api/admin/platform/stats${orgId ? `?orgId=${orgId}` : ''}`, { refreshMs: 30000 });
   if (!data) return <div className="grid gap-4 md:grid-cols-3"><Skeleton className="h-28" /><Skeleton className="h-28" /><Skeleton className="h-28" /></div>;
   const t = data.totals;
   return (
@@ -69,16 +70,15 @@ function NewOrg({ open, onClose, onDone }: { open: boolean; onClose: () => void;
       <div className="grid gap-4 sm:grid-cols-2"><Field label="Admin name" error={errs.adminName}><input className="input" value={f.adminName} onChange={(e) => setF({ ...f, adminName: e.target.value })} aria-label="Admin name" /></Field><Field label="Admin email" error={errs.adminEmail}><input type="email" className="input" value={f.adminEmail} onChange={(e) => setF({ ...f, adminEmail: e.target.value })} aria-label="Admin email" /></Field></div></div></Modal>;
 }
 
-function UsersTab({ orgId, setOrgId }: { orgId: string; setOrgId: (v: string) => void }) {
+function UsersTab({ orgId }: { orgId: string }) {
   const router = useRouter(); const [q, setQ] = useState(''); const { data, reload } = useApi<any[]>(`/api/admin/platform/users?q=${encodeURIComponent(q)}${orgId ? `&orgId=${orgId}` : ''}`);
-  const { data: orgs } = useApi<any[]>('/api/admin/platform/orgs');
   const pg = usePaged(data); const [imp, setImp] = useState<any>(null); const [reason, setReason] = useState(''); const [busy, setBusy] = useState(false); const [temp, setTemp] = useState<string | null>(null);
   async function act(u: any, action: string) { try { const r: any = await api(`/api/admin/platform/users/${u._id}`, { method: 'PATCH', body: { action } }); if (r.temporaryPassword) setTemp(`${u.email} → ${r.temporaryPassword}`); else toast.success('Done'); reload(); } catch (e) { toast.error(errMsg(e)); } }
   async function impersonate() { setBusy(true); try { await api('/api/admin/platform/impersonate', { body: { userId: imp._id, reason } }); window.location.href = '/dashboard'; } catch (e) { toast.error(e instanceof ApiError && e.fields ? Object.values(e.fields)[0] : errMsg(e)); setBusy(false); } }
   void router;
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center gap-3"><div className="relative w-full max-w-sm"><Search size={15} className="absolute left-3 top-[13px] text-faint" /><input aria-label="Search users" className="input !pl-9" placeholder="Search users" value={q} onChange={(e) => setQ(e.target.value)} /></div><Select aria-label="Filter by organization" className="!w-56" value={orgId} onChange={setOrgId} options={[{ value: '', label: 'All organizations' }, ...(orgs || []).map((o) => ({ value: String(o._id), label: o.name })), { value: 'none', label: 'No organization (platform)' }]} /></div>
+      <div className="mb-4 flex flex-wrap items-center gap-3"><div className="relative w-full max-w-sm"><Search size={15} className="absolute left-3 top-[13px] text-faint" /><input aria-label="Search users" className="input !pl-9" placeholder="Search users" value={q} onChange={(e) => setQ(e.target.value)} /></div></div>
       <Card className="overflow-x-auto"><table className="w-full min-w-[760px] text-[13.5px]"><thead className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wider text-muted"><tr><th className="p-4">User</th><th>Organization</th><th>Role</th><th>Status</th><th>Last login</th><th className="pr-4 text-right" /></tr></thead>
         <tbody>{!data ? <tr><td colSpan={6} className="p-6"><Skeleton className="h-16" /></td></tr> : data.length === 0 ? <tr><td colSpan={6}><EmptyState title="No users found" /></td></tr> : pg.rows.map((u) => <tr key={u._id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"><td className="p-3"><div className="flex items-center gap-2.5"><Avatar user={u} size={30} /><div><div className="font-medium">{u.name}</div><div className="text-xs text-faint">{u.email}</div></div></div></td><td>{u.orgName || '—'}</td><td className="capitalize">{u.platformRole === 'super_admin' ? <span className="chip !text-accent">Super Admin</span> : u.role.replace('_', ' ')}</td><td><span className={`chip capitalize ${u.status === 'active' ? '!text-success' : '!text-danger'}`}>{u.status}{u.lockUntil && new Date(u.lockUntil) > new Date() ? ' · locked' : ''}</span></td><td className="text-xs text-muted">{u.lastLoginAt ? relTime(u.lastLoginAt) : 'never'}</td>
           <td className="pr-3 text-right"><Dropdown trigger={({ toggle }) => <button onClick={toggle} className="btn btn-sm" aria-label={`Actions for ${u.name}`}>Manage</button>}>{(close) => <div className="w-52">{u.platformRole !== 'super_admin' && u.status === 'active' && <MenuItem icon={<Eye size={14} />} onClick={() => { close(); setImp(u); }}>Impersonate…</MenuItem>}<MenuItem onClick={() => { close(); act(u, u.status === 'active' ? 'suspend' : 'activate'); }}>{u.status === 'active' ? 'Suspend' : 'Activate'}</MenuItem><MenuItem onClick={() => { close(); act(u, 'unlock'); }}>Unlock account</MenuItem><MenuItem onClick={() => { close(); act(u, 'logout_all'); }}>Sign out everywhere</MenuItem><MenuItem onClick={() => { close(); act(u, 'reset_password'); }}>Reset password</MenuItem></div>}</Dropdown></td></tr>)}</tbody></table>{data && data.length > 0 && <Pagination {...pg.bar} />}</Card>
