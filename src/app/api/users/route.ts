@@ -5,7 +5,7 @@ import { can } from '@/server/rbac';
 /** Org directory (used by assignee pickers, mentions, member management). `?project=KEY` limits to users who can be assigned. */
 export const GET = route(async (req, { user }) => {
   const sp = new URL(req.url).searchParams;
-  const users = await User.find({ orgId: user.orgId, status: 'active' }).select('name email color title role').sort({ name: 1 }).lean<any[]>();
+  const users = await User.find({ orgId: user.orgId, status: 'active' }).select('name email color title role avatarUrl').sort({ name: 1 }).lean<any[]>();
   const key = sp.get('project');
   if (key) {
     const p = await Project.findOne({ orgId: user.orgId, key: key.toUpperCase() }).lean<any>();

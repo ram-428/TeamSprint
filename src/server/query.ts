@@ -9,7 +9,7 @@ import type { AuthUser } from './auth';
 export async function hydrate(issues: any[]) {
   const ids = new Set<string>();
   for (const i of issues) { if (i.assigneeId) ids.add(String(i.assigneeId)); if (i.reporterId) ids.add(String(i.reporterId)); }
-  const users = await User.find({ _id: { $in: [...ids] } }).select('name color title').lean<any[]>();
+  const users = await User.find({ _id: { $in: [...ids] } }).select('name color title avatarUrl').lean<any[]>();
   const map = new Map(users.map((u) => [String(u._id), { _id: String(u._id), name: u.name, color: u.color }]));
   return issues.map((i) => ({ ...i, assignee: i.assigneeId ? map.get(String(i.assigneeId)) : undefined, reporter: i.reporterId ? map.get(String(i.reporterId)) : undefined }));
 }

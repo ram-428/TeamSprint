@@ -13,7 +13,7 @@ export function Spinner({ size = 16 }: { size?: number }) {
   return <span style={{ width: size, height: size, animation: 'spin .7s linear infinite' }} className="inline-block rounded-full border-2 border-current border-t-transparent" aria-label="Loading" />;
 }
 
-export function Avatar({ user, size = 28, ring }: { user?: { name?: string; color?: string } | null; size?: number; ring?: boolean }) {
+export function Avatar({ user, size = 28, ring }: { user?: { name?: string; color?: string; avatarUrl?: string } | null; size?: number; ring?: boolean }) {
   if (!user) return (
     <span title="Unassigned" style={{ width: size, height: size }} className="inline-flex shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--border-strong)] text-faint">
       <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>
@@ -21,6 +21,10 @@ export function Avatar({ user, size = 28, ring }: { user?: { name?: string; colo
   );
   const initials = (user.name || '?').split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase();
   const c = user.color || '#7c5cff';
+  if (user.avatarUrl) return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={user.avatarUrl} alt={user.name || 'User'} title={user.name} width={size} height={size} loading="lazy" decoding="async" style={{ width: size, height: size, boxShadow: ring ? '0 0 0 2px var(--bg)' : undefined }} className="inline-block shrink-0 select-none rounded-full bg-[var(--surface-2)] object-cover" />
+  );
   return (
     <span title={user.name} style={{ width: size, height: size, fontSize: size * 0.38, background: `linear-gradient(135deg, ${c}, ${c}99)`, boxShadow: ring ? '0 0 0 2px var(--bg)' : undefined }} className="inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold text-white">
       {initials}
@@ -28,7 +32,7 @@ export function Avatar({ user, size = 28, ring }: { user?: { name?: string; colo
   );
 }
 
-export function AvatarStack({ users, max = 4, size = 26 }: { users: ({ name?: string; color?: string } | undefined)[]; max?: number; size?: number }) {
+export function AvatarStack({ users, max = 4, size = 26 }: { users: ({ name?: string; color?: string; avatarUrl?: string } | undefined)[]; max?: number; size?: number }) {
   const shown = users.filter(Boolean).slice(0, max);
   const extra = users.filter(Boolean).length - shown.length;
   return (

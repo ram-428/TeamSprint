@@ -15,7 +15,7 @@ export const GET = route(async (_req, { user }) => {
       { $group: { _id: '$projectId', total: { $sum: 1 }, done: { $sum: { $cond: [{ $eq: ['$statusCategory', 'done'] }, 1, 0] } } } },
     ]),
     Sprint.find({ projectId: { $in: ids }, state: 'active' }).select('projectId name endDate').lean<any[]>(),
-    User.find({ _id: { $in: visible.map((p) => p.leadId).filter(Boolean) } }).select('name color').lean<any[]>(),
+    User.find({ _id: { $in: visible.map((p) => p.leadId).filter(Boolean) } }).select('name color avatarUrl').lean<any[]>(),
   ]);
   return visible.map((p) => {
     const c = counts.find((x) => String(x._id) === String(p._id));

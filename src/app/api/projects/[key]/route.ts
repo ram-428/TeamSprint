@@ -7,7 +7,7 @@ import { abilities } from '@/server/rbac';
 export const GET = route(async (_req, { user, params }) => {
   const p = await loadProject(user, params.key);
   const ids = [...p.members.map((m: any) => m.userId), p.leadId].filter(Boolean);
-  const users = await User.find({ _id: { $in: ids } }).select('name email color title role').lean<any[]>();
+  const users = await User.find({ _id: { $in: ids } }).select('name email color title role avatarUrl').lean<any[]>();
   const members = p.members.map((m: any) => ({ ...users.find((u) => String(u._id) === String(m.userId)), projectRole: m.role }));
   // org-wide users that can be assigned (everyone with at least developer/reporter role)
   return { ...p, members, abilities: abilities(user, p), starred: (p.starredBy || []).map(String).includes(user.id) };

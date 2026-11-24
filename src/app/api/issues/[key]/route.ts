@@ -17,7 +17,7 @@ export const GET = route(async (_req, { user, params }) => {
     issue.sprintId ? Sprint.findById(issue.sprintId).select('name state').lean<any>() : null,
   ]);
   const ids = [...comments.map((c) => c.authorId), ...activity.map((a) => a.actorId), ...worklogs.map((w) => w.userId), ...(issue.watchers || [])];
-  const users = await User.find({ _id: { $in: ids } }).select('name color').lean<any[]>();
+  const users = await User.find({ _id: { $in: ids } }).select('name color avatarUrl').lean<any[]>();
   const u = (id: any) => users.find((x) => String(x._id) === String(id));
   const owns = String(issue.reporterId) === user.id;
   const ab = abilities(user, project);

@@ -24,7 +24,7 @@ export const GET = route(async (_req, { user }) => {
     sprints.length ? Issue.find({ sprintId: { $in: sprints.map((s) => s._id) }, deletedAt: null }).select('sprintId points statusCategory').lean<any[]>() : [],
     Project.find({ _id: { $in: sprints.map((s) => s.projectId) } }).select('key name color').lean<any[]>(),
     Issue.find({ _id: { $in: acts.map((a) => a.issueId) } }).select('key summary').lean<any[]>(),
-    User.find({ _id: { $in: acts.map((a) => a.actorId) } }).select('name color').lean<any[]>(),
+    User.find({ _id: { $in: acts.map((a) => a.actorId) } }).select('name color avatarUrl').lean<any[]>(),
   ]);
   const sprintStats = sprints.map((s) => {
     const items = sprintIssues.filter((i) => String(i.sprintId) === String(s._id));

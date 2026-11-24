@@ -9,6 +9,7 @@ import { api, errMsg, invalidate, toast, useApi } from '@/lib/api';
 import { Avatar, ConfirmDialog, Dropdown, MenuItem, PriorityIcon, ProgressBar, Select, Skeleton, Spinner, StatusChip, Tabs, TypeIcon, fmtDuration, relTime, ErrorState } from '../ui';
 import { mdToHtml } from '@/lib/md';
 import { useMe } from '../UserContext';
+import { AttachmentGallery, AttachmentPicker } from '../Attachments';
 
 const PRIOS = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
 const TYPES = ['epic', 'story', 'task', 'bug', 'subtask'];
@@ -103,12 +104,14 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
               <InlineText value={issue.summary} disabled={!canEdit} onSave={(v) => patch({ summary: v })} className="text-[22px] font-semibold leading-tight" label="Title" />
               {issue.flagged && <div className="flagged-card flex items-center gap-2 rounded-xl border border-warning/40 px-3 py-2 text-[13px] text-warning"><Flag size={14} /> Flagged as an impediment</div>}
               <Description compact value={issue.description || ''} disabled={!canEdit} onSave={(v) => patch({ description: v })} />
+              <Attachments issueKey={issueKey} items={issue.attachments || []} canEdit={canEdit} reload={reload} />
             </div>
           ) : (
             <>
               <InlineText value={issue.summary} disabled={!canEdit} onSave={(v) => patch({ summary: v })} className="text-[24px] font-semibold leading-snug" label="Title" />
               {issue.flagged && <div className="flagged-card flex items-center gap-2 rounded-xl border border-warning/40 px-3 py-2 text-[13px] text-warning"><Flag size={14} /> Flagged as an impediment</div>}
               <Description value={issue.description || ''} disabled={!canEdit} onSave={(v) => patch({ description: v })} />
+              <Attachments issueKey={issueKey} items={issue.attachments || []} canEdit={canEdit} reload={reload} />
             </>
           )}
 
@@ -236,6 +239,27 @@ function Description({ value, onSave, disabled, compact }: { value: string; onSa
   );
 }
 
+function Attachments({ issueKey, items, canEdit, reload }: { issueKey: string; items: any[]; canEdit: boolean; reload: () => void }) {
+  const [adding, setAdding] = useState(false); const [del, setDel] = useState<any>(null);
+  async function attach(files: any[]) {
+    try {
+      await api(`/api/issues/${issueKey}/attachments`, { body: { attachments: files.map(({ name, url, publicId, resourceType, format, bytes, width, height }) => ({ name, url, publicId, resourceType, format, bytes, width, height })) } });
+      await reload(); invalidate('/api/issues'); toast.success(files.length === 1 ? 'File attached' : `${files.length} files attached`);
+    } catch (e) { toast.error(errMsg(e)); }
+  }
+  async function remove(a: any) { try { await api(`/api/issues/${issueKey}/attachments?id=${a.id}`, { method: 'DELETE' }); await reload(); toast.success('Attachment removed'); } catch (e) { toast.error(errMsg(e)); } }
+  if (!items.length && !canEdit) return null;
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-2"><h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted">Attachments{items.length > 0 && <span className="ml-1.5 normal-case text-faint">({items.length})</span>}</h3>
+        {canEdit && <button type="button" className="btn btn-sm ml-auto" onClick={() => setAdding((v) => !v)}>{adding ? 'Close' : <><Plus size={13} /> Add</>}</button>}</div>
+      {adding && canEdit && <div className="mb-3"><AttachmentPicker compact files={[]} max={Math.max(0, 20 - items.length)} onUploaded={attach} /></div>}
+      {items.length > 0 ? <AttachmentGallery items={items} canDelete={canEdit} onDelete={setDel} /> : !adding && <p className="rounded-xl border border-dashed border-[var(--border-strong)] px-4 py-4 text-[13px] text-muted">No attachments yet. Add photos, videos or documents.</p>}
+      <ConfirmDialog open={!!del} onClose={() => setDel(null)} danger title="Remove attachment" confirmLabel="Remove" message={<>Remove <b>{del?.name}</b> from this issue? The file is deleted.</>} onConfirm={async () => { await remove(del); setDel(null); }} />
+    </div>
+  );
+}
+
 function Labels({ value, onSave, disabled }: { value: string[]; onSave: (v: string[]) => void; disabled?: boolean }) {
   const [v, setV] = useState('');
   return (
@@ -306,7 +330,7 @@ function History({ data }: { data: any }) {
       {data.activity.map((a: any) => (
         <div key={a._id} className="relative">
           <span className="absolute -left-6 top-1"><Avatar user={a.actor} size={22} /></span>
-          <div className="text-[13.5px]"><b>{a.actor?.name || 'System'}</b> <span className="text-muted">{a.action === 'created' ? 'created this issue' : a.action === 'commented' ? 'added a comment' : a.action === 'worklog' ? 'logged work' : a.action === 'automation' ? <>ran automation <i>{a.diff?.rule}</i></> : 'updated'}</span> <span className="text-xs text-faint">· {relTime(a.createdAt)}</span></div>
+          <div className="text-[13.5px]"><b>{a.actor?.name || 'System'}</b> <span className="text-muted">{a.action === 'created' ? 'created this issue' : a.action === 'commented' ? 'added a comment' : a.action === 'worklog' ? 'logged work' : a.action === 'attached' ? <>attached {(a.diff?.files || []).join(', ')}</> : a.action === 'detached' ? <>removed attachment <i>{a.diff?.file}</i></> : a.action === 'automation' ? <>ran automation <i>{a.diff?.rule}</i></> : 'updated'}</span> <span className="text-xs text-faint">· {relTime(a.createdAt)}</span></div>
           {a.action === 'updated' && a.diff && Object.entries(a.diff).map(([f, d]: any) => <div key={f} className="mt-1 flex flex-wrap items-center gap-2 text-[12.5px]"><span className="chip">{f.replace('Id', '')}</span><span className="text-muted line-through">{nameOf(f, d.from)}</span><span className="text-faint">→</span><span className="font-medium">{nameOf(f, d.to)}</span></div>)}
         </div>
       ))}
