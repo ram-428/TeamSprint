@@ -48,10 +48,12 @@ function LoginForm() {
       <div aria-hidden className="pointer-events-none absolute inset-0">{Array.from({ length: 22 }, (_, i) => (
         <span key={i} className="absolute rounded-full bg-[var(--accent-2)]" style={{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 100}%`, width: 2 + (i % 3), height: 2 + (i % 3), opacity: 0.25, animation: `float ${5 + (i % 5)}s ease-in-out ${i * 0.3}s infinite` }} />))}</div>
 
-      <ThemeSwitch className="absolute right-4 top-4 z-30" />
 
       {/* logo row (top of the page) */}
-      <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="relative z-10 hidden shrink-0 px-10 pt-5 lg:block xl:px-14"><Logo variant="full" size={68} /></motion.div>
+      <div className="relative z-30 flex shrink-0 items-start justify-between gap-4 px-4 pt-4 sm:px-6 lg:px-10 lg:pt-5 xl:px-14">
+        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="hidden lg:block"><Logo variant="full" size={68} /></motion.div>
+        <ThemeSwitch className="ml-auto" />
+      </div>
 
       <div className="relative grid min-h-0 flex-1 lg:grid-cols-[1.1fr_1fr]">
       {/* hero */}
