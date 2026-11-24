@@ -42,16 +42,19 @@ function LoginForm() {
   }
 
   return (
-    <div ref={wrap} onPointerMove={onMove} className="relative grid h-[100dvh] overflow-hidden lg:grid-cols-[1.1fr_1fr]">
+    <div ref={wrap} onPointerMove={onMove} className="relative flex h-[100dvh] flex-col overflow-hidden">
       <motion.div aria-hidden style={{ x: blobX, y: blobY }} className="pointer-events-none absolute left-[18%] top-[22%] h-[520px] w-[520px] rounded-full bg-[var(--accent)] opacity-20 blur-[120px]" />
       <div aria-hidden className="pointer-events-none absolute inset-0">{Array.from({ length: 22 }, (_, i) => (
         <span key={i} className="absolute rounded-full bg-[var(--accent-2)]" style={{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 100}%`, width: 2 + (i % 3), height: 2 + (i % 3), opacity: 0.25, animation: `float ${5 + (i % 5)}s ease-in-out ${i * 0.3}s infinite` }} />))}</div>
 
       <ThemeSwitch className="absolute right-4 top-4 z-30" />
 
+      {/* logo row (top of the page) */}
+      <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="relative z-10 hidden shrink-0 px-10 pt-5 lg:block xl:px-14"><Logo variant="full" size={68} /></motion.div>
+
+      <div className="relative grid min-h-0 flex-1 lg:grid-cols-[1.1fr_1fr]">
       {/* hero */}
-      <div className="relative hidden min-h-0 flex-col justify-between overflow-hidden p-10 lg:flex xl:p-14">
-        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}><Logo variant="full" size={96} /></motion.div>
+      <div className="relative hidden min-h-0 flex-col justify-between overflow-hidden px-10 pb-8 pt-8 lg:flex xl:px-14">
         <div className="relative">
           <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }} className="whitespace-nowrap text-[clamp(20px,2.8vw,52px)] font-semibold leading-[1.15]">
             {/* single line (nowrap): the word takes its natural width and "together." glides to follow it, so there is never a gap or a reflow */}
@@ -64,7 +67,7 @@ function LoginForm() {
       </div>
 
       {/* form */}
-      <div className="relative flex min-h-0 items-center justify-center overflow-hidden p-4 sm:p-6">
+      <div className="relative flex min-h-0 items-center justify-center overflow-y-auto p-4 sm:p-6 lg:items-start lg:pt-8">
         <motion.div initial={{ opacity: 0, y: 30, scale: 0.96 }} animate={ok ? { opacity: 0, scale: 1.06, y: -12 } : { opacity: 1, y: 0, scale: 1 }} transition={{ duration: ok ? 0.5 : 0.7, ease: [0.22, 1, 0.36, 1] }} className="relative w-full max-w-[420px]">
           <div aria-hidden className="absolute -inset-[1.5px] rounded-[30px] opacity-80" style={{ background: 'conic-gradient(from var(--ang, 0deg), var(--accent), var(--accent-2), #f472b6, var(--accent))', animation: 'ang 6s linear infinite' }} />
           <div className="relative rounded-[28px] p-6 sm:p-7" style={{ background: 'var(--surface-solid)' }}>
@@ -102,6 +105,7 @@ function LoginForm() {
 
           </div>
         </motion.div>
+      </div>
       </div>
     </div>
   );

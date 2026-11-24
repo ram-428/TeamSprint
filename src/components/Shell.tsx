@@ -89,15 +89,12 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
         <Link href="/dashboard" className={collapsed ? '' : 'block w-full'}>{collapsed ? <Logo text={false} size={44} /> : <Logo variant="sidebar" />}</Link>
       </div>
       <button onClick={() => setCreate(true)} disabled={me.role === 'guest'} className={clsx('btn btn-primary mx-4 mt-5', collapsed && '!mx-3 !px-0')} title="Create issue (C)"><Plus size={17} />{!collapsed && 'Create'}</button>
-      <nav className="mt-5 flex flex-1 flex-col gap-1 px-4" aria-label="Main">
+      <nav className="mt-5 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-4 pb-4" aria-label="Main">
         {nav.map((n) => <NavLink key={n.href} n={n} path={path} collapsed={collapsed} />)}
         {admin.length > 0 && <div className="my-3 border-t border-[var(--border)]" />}
         {admin.length > 0 && !collapsed && <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-faint">Administration</div>}
         {admin.map((n) => <NavLink key={n.href} n={n} path={path} collapsed={collapsed} />)}
       </nav>
-      <div className="p-4">
-        <button onClick={toggleCollapse} className="btn btn-ghost btn-sm hidden w-full lg:inline-flex" aria-label="Toggle sidebar" title="Toggle sidebar ([)">{collapsed ? <ChevronsRight size={16} /> : <><ChevronsLeft size={16} /> Collapse</>}</button>
-      </div>
     </div>
   );
 
@@ -125,7 +122,11 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
         <div className={clsx(ready && 'transition-[padding] duration-300', collapsed ? 'lg:pl-[108px]' : 'lg:pl-[272px]')}>
           <header className="sticky top-0 z-30 px-4 pt-3 lg:pr-5">
             <div className="glass flex h-[58px] items-center gap-3 rounded-[20px] px-3">
-              <button className="btn btn-ghost btn-icon lg:hidden" aria-label="Open menu" onClick={() => setMobile(true)}><Menu size={19} /></button>
+              <button className="btn btn-ghost btn-icon shrink-0" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={`${collapsed ? 'Expand' : 'Collapse'} sidebar ([)`}
+                onClick={() => { if (window.matchMedia('(min-width: 1024px)').matches) toggleCollapse(); else setMobile(true); }}>
+                <span className="flex lg:hidden"><Menu size={19} /></span>
+                <span className="hidden lg:flex">{collapsed ? <ChevronsRight size={19} /> : <ChevronsLeft size={19} />}</span>
+              </button>
               <button onClick={() => setPalette(true)} className="flex h-10 flex-1 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 text-left text-faint transition-colors hover:border-[var(--border-strong)] sm:max-w-[520px]" aria-label="Search">
                 <Search size={16} /><span className="flex-1 truncate text-[13.5px]">Search issues, projects, people…</span><kbd className="hidden sm:inline"><Command size={10} className="inline" /> K</kbd>
               </button>
