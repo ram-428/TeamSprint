@@ -70,20 +70,21 @@ function LoginForm() {
       {/* form */}
       <div className="relative flex min-h-0 items-center justify-center overflow-y-auto p-4 sm:p-6 lg:items-start lg:pt-8">
         <motion.div initial={{ opacity: 0, y: 30, scale: 0.96 }} animate={ok ? { opacity: 0, scale: 1.06, y: -12 } : { opacity: 1, y: 0, scale: 1 }} transition={{ duration: ok ? 0.5 : 0.7, ease: [0.22, 1, 0.36, 1] }} className="relative w-full max-w-[420px]">
-          <div aria-hidden className="absolute -inset-[1.5px] rounded-[30px] opacity-80" style={{ background: 'conic-gradient(from var(--ang, 0deg), var(--accent), var(--accent-2), #f472b6, var(--accent))', animation: 'ang 6s linear infinite' }} />
-          <div className="relative rounded-[28px] p-6 sm:p-7" style={{ background: 'var(--surface-solid)' }}>
+          <div className="relative rounded-2xl border border-[var(--border)] p-6 shadow-[0_24px_60px_-24px_rgba(60,40,140,.35)] sm:p-8" style={{ background: 'var(--surface-solid)' }}>
             <div className="mb-6 lg:hidden"><Logo variant="full" size={56} /></div>
-            <motion.h2 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-[28px] font-semibold">Welcome back 👋</motion.h2>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-6 mt-1 text-muted">Sign in to your Team Sprint workspace.</motion.p>
+            <motion.h2 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-[24px] font-semibold tracking-tight">Sign in to your account</motion.h2>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-6 mt-1.5 text-[14px] text-muted">Enter your work email and password to access your workspace.</motion.p>
             <form onSubmit={submit} className="space-y-4" noValidate>
               {sp.get('reset') && !error && <div role="status" className="rounded-xl border border-success/40 bg-success/10 px-3.5 py-2.5 text-[13.5px] text-success">Password updated. Sign in with your new password.</div>}
               <AnimatePresence>{error && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto', x: [0, -7, 7, -5, 5, 0] }} exit={{ opacity: 0, height: 0 }} role="alert" className="overflow-hidden rounded-xl border border-danger/40 bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">{error}</motion.div>}</AnimatePresence>
               {[
-                { id: 'email', label: 'Email', type: 'email', icon: Mail, val: email, set: setEmail, ac: 'username', ph: 'you@company.com', d: 0.35 },
-                { id: 'password', label: 'Password', type: show ? 'text' : 'password', icon: Lock, val: password, set: setPassword, ac: 'current-password', ph: '••••••••••', d: 0.45 },
+                { id: 'email', label: 'Work email', type: 'email', icon: Mail, val: email, set: setEmail, ac: 'username', ph: 'name@company.com', d: 0.35 },
+                { id: 'password', label: 'Password', type: show ? 'text' : 'password', icon: Lock, val: password, set: setPassword, ac: 'current-password', ph: 'Enter your password', d: 0.45 },
               ].map((f) => (
                 <motion.div key={f.id} initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: f.d }}>
-                  <label className="label" htmlFor={f.id}>{f.label}</label>
+                  {f.id === 'password'
+                    ? <div className="flex items-center justify-between"><label className="label" htmlFor={f.id}>{f.label}</label><Link href="/forgot-password" className="mb-1.5 text-[13px] font-medium text-accent2 hover:underline">Forgot password?</Link></div>
+                    : <label className="label" htmlFor={f.id}>{f.label}</label>}
                   <div className="group relative"><f.icon size={16} className="absolute left-3.5 top-3 text-faint transition-colors group-focus-within:text-accent" />
                     <input id={f.id} type={f.type} autoComplete={f.ac} className={`input !pl-10 ${f.id === 'password' ? '!pr-11' : ''} ${fields[f.id] ? 'err' : ''}`} placeholder={f.ph} value={f.val} onChange={(e) => f.set(e.target.value)} onKeyUp={(e) => f.id === 'password' && setCaps(e.getModifierState('CapsLock'))} autoFocus={f.id === 'email'} />
                     {f.id === 'password' && <button type="button" aria-label={show ? 'Hide password' : 'Show password'} className="absolute right-3 top-2.5 text-faint transition-colors hover:text-text" onClick={() => setShow((s) => !s)}>{show ? <EyeOff size={17} /> : <Eye size={17} />}</button>}
@@ -92,9 +93,7 @@ function LoginForm() {
                   {f.id === 'password' && caps && <p className="mt-1 text-xs text-warning">Caps Lock is on</p>}
                 </motion.div>
               ))}
-              <div className="-mt-1 text-right"><Link href="/forgot-password" className="text-[13px] font-medium text-accent2 hover:underline">Forgot password?</Link></div>
-              <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }} whileTap={{ scale: 0.97 }} className="btn btn-primary relative w-full overflow-hidden !h-11 !rounded-xl" disabled={busy}>
-                <span aria-hidden className="shine" />
+              <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }} whileTap={{ scale: 0.98 }} className="btn btn-primary relative !mt-6 w-full overflow-hidden !h-11 !rounded-xl" disabled={busy}>
                 <AnimatePresence mode="wait" initial={false}>
                   {ok ? <motion.span key="ok" initial={{ scale: 0, rotate: -90 }} animate={{ scale: 1, rotate: 0 }} className="flex items-center gap-2"><Check size={18} /> Welcome</motion.span>
                     : busy ? <motion.span key="b" initial={{ opacity: 0 }} animate={{ opacity: 1 }}><Spinner /></motion.span>
@@ -102,7 +101,7 @@ function LoginForm() {
                 </AnimatePresence>
               </motion.button>
             </form>
-            <p className="mt-5 text-center text-[13.5px] text-muted">New to Team Sprint? <Link href="/register" className="font-semibold text-accent2 hover:underline">Create a workspace</Link></p>
+            <div className="mt-6 border-t border-[var(--border)] pt-5 text-center text-[13.5px] text-muted">Don&apos;t have an account? <Link href="/register" className="font-semibold text-accent2 hover:underline">Create a workspace</Link></div>
 
           </div>
         </motion.div>
