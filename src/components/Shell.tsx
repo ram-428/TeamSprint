@@ -85,19 +85,17 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
 
   const sidebar = (
     <div className="flex h-full flex-col">
-      <div className={clsx('flex items-center pt-4', collapsed ? 'justify-center' : 'px-4')}>
-        <Link href="/dashboard" className={collapsed ? '' : 'block w-full'}>{collapsed ? <Logo text={false} size={44} /> : <Logo variant="sidebar" />}</Link>
+      <div className={clsx('flex pt-4', collapsed ? 'flex-col items-center gap-2' : 'items-center gap-2 px-4')}>
+        <Link href="/dashboard" className={collapsed ? '' : 'block min-w-0 flex-1'}>{collapsed ? <Logo text={false} size={44} /> : <Logo variant="sidebar" />}</Link>
+        <button onClick={toggleCollapse} className="btn btn-ghost btn-icon hidden shrink-0 lg:inline-flex" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={`${collapsed ? 'Expand' : 'Collapse'} sidebar ([)`}>{collapsed ? <ChevronsRight size={17} /> : <ChevronsLeft size={17} />}</button>
       </div>
       <button onClick={() => setCreate(true)} disabled={me.role === 'guest'} className={clsx('btn btn-primary mx-4 mt-5', collapsed && '!mx-3 !px-0')} title="Create issue (C)"><Plus size={17} />{!collapsed && 'Create'}</button>
-      <nav className="mt-5 flex flex-1 flex-col gap-1 px-4" aria-label="Main">
+      <nav className="mt-5 flex flex-1 flex-col gap-1 px-4 pb-4" aria-label="Main">
         {nav.map((n) => <NavLink key={n.href} n={n} path={path} collapsed={collapsed} />)}
         {admin.length > 0 && <div className="my-3 border-t border-[var(--border)]" />}
         {admin.length > 0 && !collapsed && <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-faint">Administration</div>}
         {admin.map((n) => <NavLink key={n.href} n={n} path={path} collapsed={collapsed} />)}
       </nav>
-      <div className="p-4">
-        <button onClick={toggleCollapse} className="btn btn-ghost btn-sm hidden w-full lg:inline-flex" aria-label="Toggle sidebar" title="Toggle sidebar ([)">{collapsed ? <ChevronsRight size={16} /> : <><ChevronsLeft size={16} /> Collapse</>}</button>
-      </div>
     </div>
   );
 
