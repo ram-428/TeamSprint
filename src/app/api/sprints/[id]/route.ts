@@ -3,12 +3,14 @@ import { route, AppError, notFound, notify, audit, oid } from '@/server/api';
 import { Sprint, Issue, Project } from '@/server/models';
 import { requirePerm, sprintSnapshot } from '@/server/domain';
 import { can } from '@/server/rbac';
+import { ensureProjectStatuses } from '@/server/migrate';
 
 async function load(user: any, id: string) {
   const s = await Sprint.findById(oid(id));
   if (!s) throw notFound();
   const p = await Project.findById(s.projectId).lean<any>();
   if (!p || !can(user, 'project.view', p)) throw notFound();
+  await ensureProjectStatuses(p);
   return { s, p };
 }
 
