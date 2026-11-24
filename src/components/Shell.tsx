@@ -85,8 +85,9 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
 
   const sidebar = (
     <div className="flex h-full flex-col">
-      <div className={clsx('flex items-center pt-4', collapsed ? 'justify-center' : 'px-4')}>
-        <Link href="/dashboard" className={collapsed ? '' : 'block w-full'}>{collapsed ? <Logo text={false} size={44} /> : <Logo variant="sidebar" />}</Link>
+      <div className={clsx('flex pt-4', collapsed ? 'flex-col items-center gap-2' : 'items-center gap-2 px-4')}>
+        <Link href="/dashboard" className={collapsed ? '' : 'block min-w-0 flex-1'}>{collapsed ? <Logo text={false} size={44} /> : <Logo variant="sidebar" />}</Link>
+        <button onClick={toggleCollapse} className="btn btn-ghost btn-icon hidden shrink-0 lg:inline-flex" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={`${collapsed ? 'Expand' : 'Collapse'} sidebar ([)`}>{collapsed ? <ChevronsRight size={17} /> : <ChevronsLeft size={17} />}</button>
       </div>
       <button onClick={() => setCreate(true)} disabled={me.role === 'guest'} className={clsx('btn btn-primary mx-4 mt-5', collapsed && '!mx-3 !px-0')} title="Create issue (C)"><Plus size={17} />{!collapsed && 'Create'}</button>
       <nav className="mt-5 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-4 pb-4" aria-label="Main">

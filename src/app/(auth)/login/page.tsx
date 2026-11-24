@@ -8,6 +8,7 @@ import { Logo } from '@/components/Logo';
 import { LoginBoard } from '@/components/LoginBoard';
 import { ThemeSwitch } from '@/components/ThemeSwitch';
 import { Spinner } from '@/components/ui';
+import { DotsLoader } from '@/components/DotsLoader';
 import { api, ApiError } from '@/lib/api';
 
 const WORDS = ['plan', 'track', 'ship', 'celebrate'];
@@ -54,7 +55,7 @@ function LoginForm() {
 
       <div className="relative grid min-h-0 flex-1 lg:grid-cols-[1.1fr_1fr]">
       {/* hero */}
-      <div className="relative hidden min-h-0 flex-col justify-between overflow-hidden px-10 pb-8 pt-8 lg:flex xl:px-14">
+      <motion.div animate={ok ? { opacity: 0, x: -40, filter: 'blur(6px)' } : { opacity: 1, x: 0, filter: 'blur(0px)' }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="relative hidden min-h-0 flex-col justify-between overflow-hidden px-10 pb-8 pt-8 lg:flex xl:px-14">
         <div className="relative">
           <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }} className="whitespace-nowrap text-[clamp(20px,2.8vw,52px)] font-semibold leading-[1.15]">
             {/* single line (nowrap): the word takes its natural width and "together." glides to follow it, so there is never a gap or a reflow */}
@@ -64,7 +65,7 @@ function LoginForm() {
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }} style={{ rotateX: rotX, rotateY: rotY, transformPerspective: 1100 }} className="mt-9 [@media(max-height:820px)]:mt-5 [@media(max-height:820px)]:[zoom:0.78] [@media(max-height:680px)]:[zoom:0.6]"><LoginBoard /></motion.div>
         </div>
         <div className="relative flex gap-6 text-[12.5px] text-muted">{[[Zap, 'Instant boards'], [ShieldCheck, 'Role-based access'], [Gauge, 'Real-time reports']].map(([I, t]: any, i) => <motion.span key={t} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 + i * 0.12 }} className="flex items-center gap-1.5"><I size={14} className="text-accent2" />{t}</motion.span>)}<span className="ml-auto text-faint">© {new Date().getFullYear()} Team Sprint</span></div>
-      </div>
+      </motion.div>
 
       {/* form */}
       <div className="relative flex min-h-0 items-center justify-center overflow-y-auto p-4 sm:p-6 lg:items-start lg:pt-8">
@@ -107,6 +108,9 @@ function LoginForm() {
         </motion.div>
       </div>
       </div>
+
+      {/* sign-in succeeded: hero + card are gone, the loader sits in the middle of the page until the dashboard has loaded */}
+      <AnimatePresence>{ok && <motion.div key="signing-in" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45, delay: 0.2 }} className="absolute inset-0 z-20 flex items-center justify-center"><DotsLoader size={240} label="Signing you in…" /></motion.div>}</AnimatePresence>
     </div>
   );
 }
