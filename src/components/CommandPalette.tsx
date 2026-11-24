@@ -56,12 +56,12 @@ export function CommandPalette({ open, onClose, onCreate, toggleTheme }: { open:
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[95] flex items-start justify-center p-4 pt-[12vh]">
+        <div className="fixed inset-0 z-[95] flex items-start justify-center p-3 pt-[10vh] sm:p-4 sm:pt-[12vh]">
           <motion.div className="fixed inset-0 bg-black/60" initial={{ opacity: 0, backdropFilter: 'blur(0px)' }} animate={{ opacity: 1, backdropFilter: 'blur(10px)' }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div role="dialog" aria-label="Command palette" initial={{ opacity: 0, y: -16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }} transition={{ type: 'spring', stiffness: 420, damping: 32 }} className="glass-solid relative w-full max-w-[620px] overflow-hidden rounded-3xl shadow-[var(--glow)]">
             <div className="flex items-center gap-3 border-b border-[var(--border)] px-5">
               <Search size={18} className="text-accent2" />
-              <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} placeholder="Search issues, projects, people or run a command…" className="h-14 flex-1 bg-transparent text-[15px] outline-none placeholder:text-faint" aria-label="Search" />
+              <input ref={inputRef} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} placeholder="Search issues, projects, people or run a command…" className="h-14 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-faint" aria-label="Search" />
               <kbd>esc</kbd>
             </div>
             <div className="max-h-[52vh] overflow-y-auto p-2">

@@ -28,7 +28,7 @@ export default function RegisterPage() {
   }
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
-      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="glass w-full max-w-[460px] rounded-[28px] p-8">
+      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="glass w-full max-w-[460px] rounded-[24px] p-6 sm:rounded-[28px] sm:p-8">
         <Logo />
         <h1 className="mt-6 text-[28px] font-semibold">Create your workspace</h1>
         <p className="mb-6 mt-1 text-muted">Start planning in under a minute. Free forever for small teams.</p>

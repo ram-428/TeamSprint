@@ -31,13 +31,13 @@ export default function ProjectLayout({ children, params }: { children: React.Re
     <ProjectProvider value={{ project, reload, mutate }}>
       <div className="mx-auto max-w-[1600px]">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3.5">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl text-[15px] font-bold text-white" style={{ background: `linear-gradient(135deg, ${project.color}, ${project.color}88)`, boxShadow: `0 10px 24px -10px ${project.color}` }}>{project.key.slice(0, 2)}</span>
-            <div><div className="flex items-center gap-2"><h1 className="text-[24px] font-semibold leading-tight">{project.name}</h1>{project.visibility === 'private' && <Lock size={13} className="text-faint" />}
+          <div className="flex min-w-0 items-center gap-3.5">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-[15px] font-bold text-white" style={{ background: `linear-gradient(135deg, ${project.color}, ${project.color}88)`, boxShadow: `0 10px 24px -10px ${project.color}` }}>{project.key.slice(0, 2)}</span>
+            <div className="min-w-0"><div className="flex items-center gap-2"><h1 className="truncate text-[20px] font-semibold leading-tight sm:text-[24px]">{project.name}</h1>{project.visibility === 'private' && <Lock size={13} className="text-faint" />}
               <button aria-label={project.starred ? 'Unstar' : 'Star'} className="rounded-lg p-1 text-faint hover:text-warning" onClick={async () => { mutate({ ...project, starred: !project.starred }); await api(`/api/projects/${key}`, { method: 'PATCH', body: { starred: !project.starred } }).catch(() => mutate()); }}><Star size={16} className={project.starred ? 'fill-[var(--warning)] text-warning' : ''} /></button></div>
-              <div className="flex items-center gap-2 text-[12.5px] text-muted"><span className="key font-semibold">{project.key}</span><span>·</span><span className="capitalize">{project.type.replace('_', ' ')}</span><span>·</span><button className="inline-flex items-center gap-1 hover:text-text hover:underline" onClick={() => setMembersOpen(true)}><Layers size={12} />{project.members.length} {project.members.length === 1 ? 'member' : 'members'}</button>{ab.role === 'viewer' && <span className="chip !h-5 !text-[10px]">read-only</span>}</div></div>
+              <div className="flex flex-wrap items-center gap-x-2 text-[12.5px] text-muted"><span className="key font-semibold">{project.key}</span><span>·</span><span className="capitalize">{project.type.replace('_', ' ')}</span><span>·</span><button className="inline-flex items-center gap-1 hover:text-text hover:underline" onClick={() => setMembersOpen(true)}><Layers size={12} />{project.members.length} {project.members.length === 1 ? 'member' : 'members'}</button>{ab.role === 'viewer' && <span className="chip !h-5 !text-[10px]">read-only</span>}</div></div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button aria-label="View project members" title="Project members" className="rounded-full" onClick={() => setMembersOpen(true)}><AvatarStack users={project.members} max={5} size={30} /></button>
             {ab['project.manage_members']
               ? <button className="btn btn-primary btn-sm" onClick={() => setMembersOpen(true)}><UserPlus size={15} /> Add member</button>

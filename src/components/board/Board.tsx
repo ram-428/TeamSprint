@@ -25,7 +25,7 @@ function Column({ status, items, wip, children, count, canCreate, onCreate }: { 
   const { setNodeRef, isOver } = useDroppable({ id: `col:${status.id}` });
   const over = wip ? count > wip : false; const atLimit = wip ? count === wip : false;
   return (
-    <div className={clsx('flex w-[300px] shrink-0 flex-col rounded-[22px] border p-2.5 transition-colors', isOver ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--border)] bg-[var(--surface)]', over && 'border-danger/70 shadow-[0_0_0_1px_var(--danger),0_0_32px_-8px_var(--danger)]')}>
+    <div className={clsx('flex w-[min(300px,calc(100vw-4rem))] shrink-0 flex-col rounded-[22px] border p-2.5 transition-colors', isOver ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--border)] bg-[var(--surface)]', over && 'border-danger/70 shadow-[0_0_0_1px_var(--danger),0_0_32px_-8px_var(--danger)]')}>
       <div className="mb-2.5 flex items-center gap-2 px-2 pt-1.5">
         <span className="h-2.5 w-2.5 rounded-full" style={{ background: status.color, boxShadow: `0 0 10px ${status.color}` }} />
         <h3 className="text-[12.5px] font-bold uppercase tracking-wide">{status.name}</h3>

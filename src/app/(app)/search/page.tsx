@@ -32,14 +32,14 @@ function Search() {
       <div className="grid gap-6 xl:grid-cols-[1fr_280px]">
         <div className="space-y-4">
           <Card className="p-4">
-            <div className="flex items-start gap-3"><TerminalSquare size={18} className="mt-2.5 text-accent2" />
+            <div className="flex flex-wrap items-start gap-3 sm:flex-nowrap"><TerminalSquare size={18} className="mt-2.5 hidden shrink-0 text-accent2 sm:block" />
               <textarea aria-label="OQL query" spellCheck={false} rows={2} className={`input !font-mono !text-[13.5px] ${err ? 'err' : ''}`} value={oql} onChange={(e) => setOql(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); run(); } }} placeholder='project = ACME AND status = "In Progress"' />
-              <div className="flex flex-col gap-2"><button className="btn btn-primary" onClick={() => run()} disabled={loading}>{loading ? <Spinner /> : <Play size={14} />} Search</button><button className="btn btn-sm" onClick={() => setSave(true)}><Save size={13} /> Save</button></div></div>
+              <div className="flex w-full gap-2 sm:w-auto sm:flex-col"><button className="btn btn-primary" onClick={() => run()} disabled={loading}>{loading ? <Spinner /> : <Play size={14} />} Search</button><button className="btn btn-sm" onClick={() => setSave(true)}><Save size={13} /> Save</button></div></div>
             {err && <p role="alert" className="mt-2 text-[13px] text-danger">⚠ {err}</p>}
             <div className="mt-3 flex flex-wrap gap-1.5">{EXAMPLES.map((e) => <button key={e} onClick={() => { setOql(e); run(e); }} className="chip !h-auto cursor-pointer !py-1 font-mono !font-normal hover:!border-[var(--accent)] hover:text-text">{e.length > 52 ? e.slice(0, 52) + '…' : e}</button>)}</div>
           </Card>
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3 text-[13px] text-muted"><span>{res ? <><b className="text-text">{res.total}</b> result{res.total === 1 ? '' : 's'}</> : 'Results'}</span><span className="key truncate">{applied}</span></div>
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3 text-[13px] text-muted"><span className="shrink-0">{res ? <><b className="text-text">{res.total}</b> result{res.total === 1 ? '' : 's'}</> : 'Results'}</span><span className="key min-w-0 truncate">{applied}</span></div>
             {loading && !res ? <div className="p-4"><ListSkeleton /></div> : res && res.items.length === 0 ? <EmptyState title="No issues match" text="Loosen the query or try one of the examples." /> : res ? <IssueTable items={res.items} onOpen={setSel} onChanged={() => run(applied)} canBulk projectName /> : !err && <div className="p-4"><ListSkeleton /></div>}
           </Card>
         </div>

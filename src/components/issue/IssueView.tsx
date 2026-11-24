@@ -73,13 +73,13 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
   return (
     <div className={clsx('flex flex-col', embedded ? 'min-h-full' : '')}>
       {/* header */}
-      <div className={clsx('flex items-center justify-between gap-3 border-b border-[var(--border)] px-6 py-4', embedded && 'sticky top-0 z-10 bg-[var(--surface-solid)]')}>
+      <div className={clsx('flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-4 sm:px-6', embedded && 'sticky top-0 z-10 bg-[var(--surface-solid)]')}>
         <div className="flex min-w-0 items-center gap-2 text-[13px] text-muted">
-          <Link href={`/projects/${project.key}/board`} className="hover:text-text">{project.name}</Link><ChevronRight size={13} />
+          <Link href={`/projects/${project.key}/board`} className="min-w-0 truncate hover:text-text">{project.name}</Link><ChevronRight size={13} />
           {data.epic && <><Link href={`/issues/${data.epic.key}`} className="max-w-[160px] truncate hover:text-text">{data.epic.key}</Link><ChevronRight size={13} /></>}
-          <TypeIcon type={issue.type} size={18} /><span className="key font-semibold text-text">{issue.key}</span>
+          <TypeIcon type={issue.type} size={18} /><span className="key shrink-0 font-semibold text-text">{issue.key}</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5">
           <Dropdown trigger={({ toggle }) => <button onClick={toggle} className="btn btn-sm btn-ghost" aria-label="Actions"><MoreHorizontal size={17} /></button>}>
             {(close) => (
               <div className="w-52">
@@ -95,7 +95,7 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
         </div>
       </div>
 
-      <div className={clsx(embedded ? 'flex flex-col gap-4 px-6 py-5' : 'grid gap-8 p-6 lg:grid-cols-[1fr_300px]')}>
+      <div className={clsx(embedded ? 'flex flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5' : 'grid gap-6 p-4 sm:p-6 lg:grid-cols-[1fr_300px] lg:gap-8')}>
         {/* main column */}
         <div className={clsx(embedded ? 'contents' : 'min-w-0 space-y-7')}>
           {embedded ? (
@@ -140,7 +140,7 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
         {/* sidebar */}
         {embedded ? (
           <aside className="order-2 glass rounded-2xl p-4">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-3 min-[440px]:grid-cols-2 md:grid-cols-3">
               <Prop label="Status" grid>{statusPicker}{issue.resolution && <div className="mt-1 text-xs text-muted">Resolution: {issue.resolution}</div>}</Prop>
               <Prop label="Assignee" grid>{assigneeField}</Prop>
               <Prop label="Reporter" grid>{reporterField}</Prop>
