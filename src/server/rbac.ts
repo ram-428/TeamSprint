@@ -15,19 +15,17 @@ export const PROJECT_ROLES = Object.keys(PERMS) as ProjectRole[];
 export type ProjectLike = { visibility?: string; members?: { userId: any; role: string }[]; orgId?: any };
 
 export function projectRole(u: AuthUser, p: ProjectLike): ProjectRole | null {
-  if (u.platformRole === 'super_admin') return 'project_admin';
   if (!u.orgId || String(p.orgId) !== u.orgId) return null;
   if (u.role === 'org_admin') return 'project_admin';
+  // Everyone else (members, guests) only sees projects they have been explicitly added to.
   const m = p.members?.find((x) => String(x.userId) === u.id);
-  if (m) return m.role as ProjectRole;
-  if (p.visibility === 'org' && u.role === 'member') return 'viewer';
-  return null;
+  return m ? (m.role as ProjectRole) : null;
 }
 
 /** Central permission check. `owns` = the user reported/owns the target resource. */
 export function can(u: AuthUser, perm: string, p?: ProjectLike, owns = false): boolean {
   if (perm.startsWith('platform.')) return u.platformRole === 'super_admin';
-  if (perm.startsWith('org.')) return u.role === 'org_admin' || u.platformRole === 'super_admin';
+  if (perm.startsWith('org.')) return !!u.orgId && u.role === 'org_admin';
   if (!p) return false;
   const r = projectRole(u, p);
   if (!r) return false;

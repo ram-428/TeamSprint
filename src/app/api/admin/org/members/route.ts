@@ -12,7 +12,7 @@ export const GET = route(async (_req, { user }) => {
   return users.map((u) => ({ ...u, projects: projects.filter((p) => p.members.some((m: any) => String(m.userId) === String(u._id))).map((p) => p.key) }));
 });
 
-const schema = z.object({ name: z.string().trim().min(2, 'Name is required'), email: z.string().email('Enter a valid email'), role: z.enum(['org_admin', 'member', 'guest']).default('member'), title: z.string().optional() });
+const schema = z.object({ name: z.string().trim().min(2, 'Name is required'), email: z.string().email('Enter a valid email'), role: z.enum(['member', 'guest']).default('member'), title: z.string().optional() });
 const COLORS = ['#7c5cff', '#22d3ee', '#f472b6', '#34d399', '#fbbf24', '#60a5fa', '#fb7185', '#a78bfa'];
 
 /** "Invite": creates the account with a one-time temporary password (emailed to the invitee, and shown once to the admin). */

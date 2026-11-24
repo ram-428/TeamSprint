@@ -16,7 +16,8 @@ export async function hydrate(issues: any[]) {
 
 /** IDs of projects the user may view. */
 export async function visibleProjectIds(user: AuthUser): Promise<mongoose.Types.ObjectId[]> {
-  const ps = await Project.find(user.platformRole === 'super_admin' ? {} : { orgId: user.orgId, archived: false }).lean<any[]>();
+  if (!user.orgId) return [];
+  const ps = await Project.find({ orgId: user.orgId, archived: false }).lean<any[]>();
   return ps.filter((p) => can(user, 'project.view', p)).map((p) => p._id);
 }
 

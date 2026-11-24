@@ -35,8 +35,8 @@ export const PRIORITIES = ['Highest', 'High', 'Medium', 'Low', 'Lowest'] as cons
 export const ISSUE_TYPES = ['epic', 'story', 'task', 'bug', 'subtask'] as const;
 
 export async function loadProject(user: AuthUser, key: string): Promise<any> {
-  const filter: any = { key: key.toUpperCase() };
-  if (user.platformRole !== 'super_admin') filter.orgId = user.orgId;
+  if (!user.orgId) throw notFound('Project not found');
+  const filter: any = { key: key.toUpperCase(), orgId: user.orgId };
   const p = await Project.findOne(filter).lean<any>();
   if (!p || !can(user, 'project.view', p)) throw notFound('Project not found');
   return p;
@@ -47,7 +47,7 @@ export function requirePerm(user: AuthUser, perm: string, p: ProjectLike, owns =
 }
 
 export async function loadIssue(user: AuthUser, key: string) {
-  const issue = await Issue.findOne({ key: key.toUpperCase(), deletedAt: null, ...(user.platformRole === 'super_admin' ? {} : { orgId: user.orgId }) });
+  const issue = user.orgId ? await Issue.findOne({ key: key.toUpperCase(), deletedAt: null, orgId: user.orgId }) : null;
   if (!issue) throw notFound('Issue not found');
   const project = await Project.findById(issue.projectId).lean<any>();
   if (!project || !can(user, 'project.view', project)) throw notFound('Issue not found');

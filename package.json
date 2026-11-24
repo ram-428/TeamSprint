@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start -p 7000",
     "seed": "tsx scripts/seed.ts",
+    "create-super-admin": "tsx scripts/create-super-admin.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "serve": "next build && next start -p 7000"

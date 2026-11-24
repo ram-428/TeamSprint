@@ -5,8 +5,8 @@ import { WORKFLOWS } from '@/server/domain';
 import { can, abilities } from '@/server/rbac';
 
 export const GET = route(async (_req, { user }) => {
-  const filter: any = user.platformRole === 'super_admin' ? {} : { orgId: user.orgId, archived: false };
-  const projects = await Project.find(filter).sort({ name: 1 }).lean<any[]>();
+  if (!user.orgId) return [];
+  const projects = await Project.find({ orgId: user.orgId, archived: false }).sort({ name: 1 }).lean<any[]>();
   const visible = projects.filter((p) => can(user, 'project.view', p));
   const ids = visible.map((p) => p._id);
   const [counts, sprints, leads] = await Promise.all([

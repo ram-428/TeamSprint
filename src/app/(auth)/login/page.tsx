@@ -16,7 +16,6 @@ function LoginForm() {
   const router = useRouter(); const sp = useSearchParams();
   const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false); const [ok, setOk] = useState(false); const [error, setError] = useState(''); const [fields, setFields] = useState<Record<string, string>>({});
-  const [challenge, setChallenge] = useState(''); const [code, setCode] = useState(''); const [sentTo, setSentTo] = useState('');
   const [word, setWord] = useState(0); const [caps, setCaps] = useState(false);
   useEffect(() => { router.prefetch('/dashboard'); }, [router]);
   useEffect(() => { const t = setInterval(() => setWord((w) => (w + 1) % WORDS.length), 2200); return () => clearInterval(t); }, []);
@@ -32,15 +31,12 @@ function LoginForm() {
   async function submit(e?: React.FormEvent, creds?: { email: string; password: string }) {
     e?.preventDefault(); setBusy(true); setError(''); setFields({});
     try {
-      const r: any = challenge
-        ? await api<{ platformRole: string }>('/api/auth/verify-otp', { body: { challenge, code } })
-        : await api<{ platformRole: string; otpRequired?: boolean; challenge?: string; email?: string }>('/api/auth/login', { body: creds || { email, password } });
-      if (r.otpRequired) { setChallenge(r.challenge); setSentTo(r.email || ''); setBusy(false); return; }
+      const r = await api<{ platformRole: string }>('/api/auth/login', { body: creds || { email, password } });
       setOk(true);
       const next = sp.get('next'); const to = next && next.startsWith('/') ? next : r.platformRole === 'super_admin' ? '/admin/platform' : '/dashboard';
       router.prefetch(to); setTimeout(() => { router.replace(to); router.refresh(); }, 650);
     } catch (err) {
-      if (err instanceof ApiError) { if (challenge && ['CHALLENGE_EXPIRED', 'CODE_EXPIRED', 'TOO_MANY'].includes(err.code)) { setChallenge(''); setCode(''); } setError(err.message); setFields(err.fields || {}); } else setError('Could not reach the server');
+      if (err instanceof ApiError) { setError(err.message); setFields(err.fields || {}); } else setError('Could not reach the server');
       setBusy(false);
     }
   }
@@ -75,16 +71,9 @@ function LoginForm() {
             <motion.h2 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-[28px] font-semibold">Welcome back 👋</motion.h2>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-6 mt-1 text-muted">Sign in to your Team Sprint workspace.</motion.p>
             <form onSubmit={submit} className="space-y-4" noValidate>
+              {sp.get('reset') && !error && <div role="status" className="rounded-xl border border-success/40 bg-success/10 px-3.5 py-2.5 text-[13.5px] text-success">Password updated. Sign in with your new password.</div>}
               <AnimatePresence>{error && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto', x: [0, -7, 7, -5, 5, 0] }} exit={{ opacity: 0, height: 0 }} role="alert" className="overflow-hidden rounded-xl border border-danger/40 bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">{error}</motion.div>}</AnimatePresence>
-              {challenge ? (
-                <div>
-                  <p className="mb-3 text-[13.5px] text-muted">We sent a 6-digit code to <b>{sentTo}</b>. Enter it below.</p>
-                  <label className="label" htmlFor="code">Verification code</label>
-                  <input id="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} autoFocus className={`input text-center text-[22px] tracking-[0.4em] ${fields.code ? 'err' : ''}`} placeholder="••••••" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} />
-                  {fields.code && <p className="field-err">{fields.code}</p>}
-                  <button type="button" className="mt-2 text-[12.5px] text-accent2 hover:underline" onClick={() => { setChallenge(''); setCode(''); setError(''); }}>Use a different account</button>
-                </div>
-              ) : [
+              {[
                 { id: 'email', label: 'Email', type: 'email', icon: Mail, val: email, set: setEmail, ac: 'username', ph: 'you@company.com', d: 0.35 },
                 { id: 'password', label: 'Password', type: show ? 'text' : 'password', icon: Lock, val: password, set: setPassword, ac: 'current-password', ph: '••••••••••', d: 0.45 },
               ].map((f) => (
@@ -98,6 +87,7 @@ function LoginForm() {
                   {f.id === 'password' && caps && <p className="mt-1 text-xs text-warning">Caps Lock is on</p>}
                 </motion.div>
               ))}
+              <div className="-mt-1 text-right"><Link href="/forgot-password" className="text-[13px] font-medium text-accent2 hover:underline">Forgot password?</Link></div>
               <motion.button initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }} whileTap={{ scale: 0.97 }} className="btn btn-primary relative w-full overflow-hidden !h-11 !rounded-xl" disabled={busy}>
                 <span aria-hidden className="shine" />
                 <AnimatePresence mode="wait" initial={false}>

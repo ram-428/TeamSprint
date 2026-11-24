@@ -14,7 +14,7 @@ export async function api<T = any>(url: string, opts: { method?: string; body?: 
   });
   let json: any = null;
   try { json = await res.json(); } catch { /* empty */ }
-  if (res.status === 401 && typeof window !== 'undefined' && !url.startsWith('/api/auth/login')) {
+  if (res.status === 401 && typeof window !== 'undefined' && !/^\/api\/auth\/(login|forgot-password|reset-password)/.test(url)) {
     window.location.href = `/login?next=${encodeURIComponent(window.location.pathname + window.location.search)}`;
   }
   if (!res.ok || !json?.ok) throw new ApiError(res.status, json?.error?.code || 'ERROR', json?.error?.message || 'Request failed', json?.error?.fields);

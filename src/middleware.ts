@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const PUBLIC = ['/login', '/register'];
+const PUBLIC = ['/login', '/register', '/forgot-password'];
 const secret = () => new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-change-me-in-production-32ch');
 
 export async function middleware(req: NextRequest) {

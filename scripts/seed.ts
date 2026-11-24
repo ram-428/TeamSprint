@@ -35,7 +35,7 @@ async function main() {
   const mk = (name: string, email: string, org: any, role: string, title: string, hash: string, i: number, extra: any = {}) =>
     ({ name, email, orgId: org?._id, role, title, passwordHash: hash, color: COLORS[i % COLORS.length], lastLoginAt: ago(rnd() * 3), createdAt: ago(100 - i), ...extra });
 
-  const sa = await User.create(mk('System Admin', 'netkathirtestmail@gmail.com', acme, 'org_admin', 'Platform Owner', pw.super, 0, { platformRole: 'super_admin' }));
+  const sa = await User.create(mk('System Admin', 'netkathirtestmail@gmail.com', null, 'member', 'Platform Owner', pw.super, 0, { platformRole: 'super_admin' }));
   const U: Record<string, any> = {};
   const defs: [string, string, string, string, string][] = [
     ['admin', 'Alex Morgan', 'admin@acme.dev', 'org_admin', 'Head of Engineering'],

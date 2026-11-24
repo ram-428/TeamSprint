@@ -13,10 +13,10 @@ export async function sendMail(to: string, subject: string, html: string, text: 
   await transport().sendMail({ from, to, subject, html, text });
 }
 
-export const sendLoginCode = (to: string, name: string, code: string) =>
-  sendMail(to, `${code} is your Team Sprint sign-in code`,
-    `<div style="font-family:Arial,sans-serif;max-width:420px"><h2>Hi ${name.replace(/[<>&]/g, '')},</h2><p>Your Team Sprint sign-in code is:</p><p style="font-size:32px;letter-spacing:6px;font-weight:700">${code}</p><p>It expires in 10 minutes. If this wasn't you, change your password.</p></div>`,
-    `Your Team Sprint sign-in code is ${code}. It expires in 10 minutes.`);
+export const sendResetCode = (to: string, name: string, code: string) =>
+  sendMail(to, `${code} is your Team Sprint password reset code`,
+    `<div style="font-family:Arial,sans-serif;max-width:420px"><h2>Hi ${name.replace(/[<>&"]/g, '')},</h2><p>Use this code to reset your Team Sprint password:</p><p style="font-size:32px;letter-spacing:6px;font-weight:700">${code}</p><p>It expires in 10 minutes. If you didn't ask for this, you can ignore this email — your password won't change.</p></div>`,
+    `Your Team Sprint password reset code is ${code}. It expires in 10 minutes. If you didn't request it, ignore this email.`);
 
 const esc = (s: string) => s.replace(/[<>&"]/g, '');
 /** Emails a new member their one-time temporary password. Never throws; returns whether it was sent. */
