@@ -18,12 +18,25 @@ function mapStatus(old: { id: string; category?: string }, projectType: string):
  * issues, WIP limits and status-based automation rules. Projects already on the shared list
  * are skipped, so running this on every server start is cheap.
  */
-export async function migrateStatuses() {
+export async function migrateStatuses(): Promise<{ total: number; migrated: number }> {
   const projects = await Project.find({}).select('type statuses wip').lean<any[]>();
-  for (const p of projects) {
-    const old: any[] = p.statuses || [];
-    if (old.map((s) => s.id).join(',') === TARGET_IDS) continue;
+  let migrated = 0;
+  for (const p of projects) if (await ensureProjectStatuses(p)) migrated++;
+  return { total: projects.length, migrated };
+}
 
+/** True when a project still has an old status list. */
+export const needsStatusMigration = (p: { statuses?: { id: string }[] }) => (p.statuses || []).map((s) => s.id).join(',') !== TARGET_IDS;
+
+/**
+ * Converts ONE project (given as a lean document with _id, type, statuses, wip) if it still has an
+ * old status list, and updates the passed object in place so the caller sees the new statuses.
+ * Returns true if it converted anything.
+ */
+export async function ensureProjectStatuses(p: any): Promise<boolean> {
+  if (!p || !needsStatusMigration(p)) return false;
+  {
+    const old: any[] = p.statuses || [];
     const mapping = new Map(old.map((s) => [s.id, mapStatus(s, p.type)]));
     // Issues: move status ids that changed, then make every issue's category match its status.
     // (No old id maps onto another old id that is itself remapped, so the order doesn't matter.)
@@ -44,5 +57,7 @@ export async function migrateStatuses() {
       const hit = old.find((s) => s.id.toLowerCase() === v || String(s.name).toLowerCase() === v);
       if (hit) await Automation.updateOne({ _id: r._id }, { $set: { conditionValue: mapStatus(hit, p.type) } });
     }
+    p.statuses = STATUSES; p.wip = wip;
   }
+  return true;
 }

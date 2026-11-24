@@ -5,6 +5,7 @@ import { can, type ProjectLike } from './rbac';
 import type { AuthUser } from './auth';
 
 import { STATUSES, type StatusDef } from '../lib/statuses';
+import { ensureProjectStatuses } from './migrate';
 export { STATUSES, type StatusDef };
 
 /** Every project type now uses the same shared status set. */
@@ -18,6 +19,7 @@ export async function loadProject(user: AuthUser, key: string): Promise<any> {
   const filter: any = { key: key.toUpperCase(), orgId: user.orgId };
   const p = await Project.findOne(filter).lean<any>();
   if (!p || !can(user, 'project.view', p)) throw notFound('Project not found');
+  await ensureProjectStatuses(p); // a project still on an old status list is converted the first time it's opened
   return p;
 }
 
@@ -26,10 +28,13 @@ export function requirePerm(user: AuthUser, perm: string, p: ProjectLike, owns =
 }
 
 export async function loadIssue(user: AuthUser, key: string) {
-  const issue = user.orgId ? await Issue.findOne({ key: key.toUpperCase(), deletedAt: null, orgId: user.orgId }) : null;
+  const find = () => (user.orgId ? Issue.findOne({ key: key.toUpperCase(), deletedAt: null, orgId: user.orgId }) : null);
+  let issue = await find();
   if (!issue) throw notFound('Issue not found');
   const project = await Project.findById(issue.projectId).lean<any>();
   if (!project || !can(user, 'project.view', project)) throw notFound('Issue not found');
+  // Convert a project still on an old status list, then reload the issue so it carries its new status.
+  if (await ensureProjectStatuses(project)) { issue = await find(); if (!issue) throw notFound('Issue not found'); }
   return { issue, project };
 }
 
