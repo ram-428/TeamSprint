@@ -31,14 +31,14 @@ export function LoginBoard() {
       <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-[var(--surface-2)]"><motion.div className="grad-bar h-full rounded-full" animate={{ width: `${(done / total) * 100}%` }} transition={{ type: 'spring', stiffness: 80, damping: 18 }} /></div>
       <div className="grid grid-cols-3 gap-3">
         {COLS.map((col, ci) => (
-          <div key={col.name} className="min-h-[250px] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2">
+          <div key={col.name} className="h-[284px] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2">
             <div className="mb-2 flex items-center gap-1.5 px-1 pt-0.5"><span className="h-2 w-2 rounded-full" style={{ background: col.c, boxShadow: `0 0 8px ${col.c}` }} /><span className="text-[10.5px] font-bold uppercase tracking-wide">{col.name}</span><span className="ml-auto text-[10.5px] text-faint">{CARDS.filter((_, i) => colOf(i) === ci).length}</span></div>
             <div className="flex flex-col gap-2">
               <AnimatePresence initial={false}>
                 {CARDS.map((c, i) => colOf(i) === ci && (
-                  <motion.div key={c.id} layoutId={`lb-${c.id}`} layout transition={{ type: 'spring', stiffness: 260, damping: 26 }} className="relative rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] p-2.5 shadow-[0_6px_18px_-10px_rgba(0,0,0,.5)]">
-                    <div className="text-[11.5px] font-medium leading-snug">{c.t}</div>
-                    <div className="mt-2 flex items-center gap-1.5">
+                  <motion.div key={c.id} layoutId={`lb-${c.id}`} layout="position" transition={{ type: 'spring', stiffness: 260, damping: 26 }} className="relative flex h-[74px] shrink-0 flex-col justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] p-2.5 shadow-[0_6px_18px_-10px_rgba(0,0,0,.5)]">
+                    <div className="line-clamp-2 break-words text-[11.5px] font-medium leading-[1.3]" title={c.t}>{c.t}</div>
+                    <div className="flex items-center gap-1.5">
                       <span className="flex h-4 w-4 items-center justify-center rounded" style={{ background: `${c.c}28`, color: c.c }}><c.I size={10} strokeWidth={2.6} /></span>
                       <span className="key text-[10px]">{c.k}</span>
                       <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--surface-2)] px-1 text-[9.5px] font-semibold text-muted">{c.pts}</span>

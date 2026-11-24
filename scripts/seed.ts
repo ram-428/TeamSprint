@@ -100,7 +100,7 @@ async function main() {
     const k = project.key;
     counters[k] = (counters[k] || 0) + 1;
     rankC[k] = (rankC[k] || 0) + 1000;
-    const st = project.statuses.find((s: any) => s.id === o.status) || project.statuses[0];
+    const st = project.statuses.find((s: any) => s.id === ({ review: 'progress', qa: 'progress', customer: 'hold' } as Record<string, string>)[o.status] || s.id === o.status) || project.statuses[0];
     const createdAt = o.createdAt || ago(20);
     const doc = {
       _id: oid(), orgId: project.orgId, projectId: project._id, projectKey: k, number: counters[k], key: `${k}-${counters[k]}`,
@@ -303,9 +303,9 @@ async function main() {
   // ───────────────────────── Automation / filters / goals / notifications / audit ─────────────────────────
   await Automation.insertMany([
     { orgId: acme._id, projectId: pACME._id, name: 'Highest-priority bugs notify the lead', trigger: 'issue_created', conditionField: 'priority', conditionValue: 'Highest', actionType: 'notify_lead', runCount: 7, lastRunAt: ago(1) },
-    { orgId: acme._id, projectId: pACME._id, name: 'Label issues moved to QA', trigger: 'status_changed', conditionField: 'status', conditionValue: 'qa', actionType: 'add_label', actionValue: 'needs-qa', runCount: 23, lastRunAt: ago(0.2) },
+    { orgId: acme._id, projectId: pACME._id, name: 'Label issues moved to Resolved', trigger: 'status_changed', conditionField: 'status', conditionValue: 'resolved', actionType: 'add_label', actionValue: 'needs-qa', runCount: 23, lastRunAt: ago(0.2) },
     { orgId: acme._id, projectId: pSUP._id, name: 'Auto-assign new tickets to support lead', trigger: 'issue_created', actionType: 'assign_lead', runCount: 41, lastRunAt: ago(0.1) },
-    { orgId: acme._id, projectId: pMKT._id, name: 'Escalate stalled review items', trigger: 'status_changed', conditionField: 'status', conditionValue: 'review', actionType: 'set_priority', actionValue: 'High', enabled: false, runCount: 3 },
+    { orgId: acme._id, projectId: pMKT._id, name: 'Escalate items put on hold', trigger: 'status_changed', conditionField: 'status', conditionValue: 'hold', actionType: 'set_priority', actionValue: 'High', enabled: false, runCount: 3 },
   ]);
   await SavedFilter.insertMany([
     { orgId: acme._id, ownerId: U.sara._id, name: 'My open bugs', oql: 'type = bug AND assignee = currentUser() AND statusCategory != done ORDER BY priority DESC' },

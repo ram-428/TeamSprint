@@ -34,10 +34,46 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
   const canEdit = ab.edit; const canTransition = ab.transition;
   const doneLike = (id: string) => project.statuses.find((s: any) => s.id === id)?.category === 'done';
 
+  // Field controls, shared by the full-page sidebar and the compact grid used in the modal.
+  const statusPicker = canTransition ? (
+    <Dropdown align="left" trigger={({ toggle }) => <button onClick={toggle} className="flex items-center gap-2" aria-label="Change status"><StatusChip project={project} status={issue.status} /><span className="text-xs text-faint">▾</span></button>}>
+      {(close) => <div className="w-52">{project.statuses.map((s: any) => <MenuItem key={s.id} active={s.id === issue.status} onClick={() => { close(); if (s.id !== issue.status) patch({ status: s.id }, doneLike(s.id) ? `${issue.key} marked done 🎉` : `Moved to ${s.name}`); }}><StatusChip project={project} status={s.id} small />{s.id === issue.status && <Check size={14} className="ml-auto" />}</MenuItem>)}</div>}
+    </Dropdown>
+  ) : <StatusChip project={project} status={issue.status} />;
+  const assigneeField = <>
+    {canEdit && ab['issue.assign'] ? <Select aria-label="Assignee" className="!h-9" value={issue.assigneeId || ''} onChange={(v) => patch({ assigneeId: v || null })} options={[{ value: '', label: 'Unassigned' }, ...(users || []).map((u) => ({ value: u._id, label: u.name }))]} /> : <div className="flex items-center gap-2"><Avatar user={issue.assignee} size={24} />{issue.assignee?.name || 'Unassigned'}</div>}
+    {canEdit && issue.assigneeId !== me.id && <button className="mt-1 text-xs font-semibold text-accent2 hover:underline" onClick={() => patch({ assigneeId: me.id }, 'Assigned to you')}>Assign to me</button>}
+  </>;
+  const reporterField = <div className="flex h-9 items-center gap-2"><Avatar user={issue.reporter} size={24} /><span className="truncate">{issue.reporter?.name || '—'}</span></div>;
+  const priorityField = canEdit ? <Select aria-label="Priority" className="!h-9" value={issue.priority} onChange={(v) => patch({ priority: v })} options={PRIOS.map((p) => ({ value: p, label: p }))} /> : <PriorityIcon priority={issue.priority} withLabel />;
+  const typeField = canEdit && issue.type !== 'subtask' ? <Select aria-label="Type" className="!h-9" value={issue.type} onChange={(v) => patch({ type: v })} options={TYPES.filter((t) => t !== 'subtask').map((t) => ({ value: t, label: t[0].toUpperCase() + t.slice(1) }))} /> : <span className="capitalize">{issue.type}</span>;
+  const sprintField = data.project.type === 'scrum' ? (canEdit ? <Select aria-label="Sprint" className="!h-9" value={issue.sprintId || ''} onChange={(v) => patch({ sprintId: v || null })} options={[{ value: '', label: 'Backlog' }, ...(sprints || []).filter((s) => s.state !== 'closed' || s._id === issue.sprintId).map((s) => ({ value: s._id, label: s.name }))]} /> : <span>{data.sprint?.name || 'Backlog'}</span>) : null;
+  const epicField = issue.type !== 'epic' && (epics?.items?.length ?? 0) > 0 ? (canEdit ? <Select aria-label="Epic" className="!h-9" value={issue.epicId || ''} onChange={(v) => patch({ epicId: v || null })} options={[{ value: '', label: 'None' }, ...(epics?.items || []).map((e) => ({ value: e._id, label: `${e.key} · ${e.summary}`.slice(0, 40) }))]} /> : <span>{data.epic?.key || 'None'}</span>) : null;
+  const dueField = <>
+    {canEdit ? <input aria-label="Due date" type="date" className="input !h-9" value={issue.dueDate ? issue.dueDate.slice(0, 10) : ''} onChange={(e) => patch({ dueDate: e.target.value || null })} /> : <span>{issue.dueDate ? new Date(issue.dueDate).toLocaleDateString() : '—'}</span>}
+    {issue.dueDate && new Date(issue.dueDate) < new Date() && issue.statusCategory !== 'done' && <div className="mt-1 text-xs font-semibold text-danger">Overdue</div>}
+  </>;
+  const timeTracking = <>
+    <div className="label flex items-center gap-1.5"><Clock size={12} /> Time tracking</div>
+    <div className="mb-2 flex justify-between text-[13px]"><span>{fmtDuration(issue.timeSpent)} logged</span><span className="text-muted">{issue.estimate ? `of ${fmtDuration(issue.estimate)}` : 'no estimate'}</span></div>
+    <ProgressBar value={issue.estimate ? (issue.timeSpent / issue.estimate) * 100 : 0} color={issue.estimate && issue.timeSpent > issue.estimate ? 'var(--danger)' : undefined} />
+    {canEdit && <EstimateEditor value={issue.estimate} onSave={(sec) => patch({ estimate: sec })} />}
+  </>;
+  const activity = (
+    <section>
+      <Tabs id="issue-tabs" value={tab} onChange={setTab} tabs={[{ id: 'comments', label: 'Comments', count: data.comments.length }, { id: 'history', label: 'History', count: data.activity.length }, { id: 'work', label: 'Work log', count: data.worklogs.length }]} />
+      <div className="mt-4">
+        {tab === 'comments' && <Comments data={data} issueKey={issueKey} reload={reload} users={users || []} />}
+        {tab === 'history' && <History data={data} />}
+        {tab === 'work' && <Worklogs data={data} issueKey={issueKey} reload={reload} />}
+      </div>
+    </section>
+  );
+
   return (
     <div className={clsx('flex flex-col', embedded ? 'min-h-full' : '')}>
       {/* header */}
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-6 py-4">
+      <div className={clsx('flex items-center justify-between gap-3 border-b border-[var(--border)] px-6 py-4', embedded && 'sticky top-0 z-10 bg-[var(--surface-solid)]')}>
         <div className="flex min-w-0 items-center gap-2 text-[13px] text-muted">
           <Link href={`/projects/${project.key}/board`} className="hover:text-text">{project.name}</Link><ChevronRight size={13} />
           {data.epic && <><Link href={`/issues/${data.epic.key}`} className="max-w-[160px] truncate hover:text-text">{data.epic.key}</Link><ChevronRight size={13} /></>}
@@ -59,15 +95,25 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
         </div>
       </div>
 
-      <div className={clsx('grid gap-8 p-6', embedded ? 'xl:grid-cols-[1fr_260px]' : 'lg:grid-cols-[1fr_300px]')}>
+      <div className={clsx(embedded ? 'flex flex-col gap-4 px-6 py-5' : 'grid gap-8 p-6 lg:grid-cols-[1fr_300px]')}>
         {/* main column */}
-        <div className="min-w-0 space-y-7">
-          <InlineText value={issue.summary} disabled={!canEdit} onSave={(v) => patch({ summary: v })} className="text-[24px] font-semibold leading-snug" label="Title" />
-          {issue.flagged && <div className="flagged-card flex items-center gap-2 rounded-xl border border-warning/40 px-3 py-2 text-[13px] text-warning"><Flag size={14} /> Flagged as an impediment</div>}
-          <Description value={issue.description || ''} disabled={!canEdit} onSave={(v) => patch({ description: v })} />
+        <div className={clsx(embedded ? 'contents' : 'min-w-0 space-y-7')}>
+          {embedded ? (
+            <div className="order-1 space-y-1.5">
+              <InlineText value={issue.summary} disabled={!canEdit} onSave={(v) => patch({ summary: v })} className="text-[22px] font-semibold leading-tight" label="Title" />
+              {issue.flagged && <div className="flagged-card flex items-center gap-2 rounded-xl border border-warning/40 px-3 py-2 text-[13px] text-warning"><Flag size={14} /> Flagged as an impediment</div>}
+              <Description compact value={issue.description || ''} disabled={!canEdit} onSave={(v) => patch({ description: v })} />
+            </div>
+          ) : (
+            <>
+              <InlineText value={issue.summary} disabled={!canEdit} onSave={(v) => patch({ summary: v })} className="text-[24px] font-semibold leading-snug" label="Title" />
+              {issue.flagged && <div className="flagged-card flex items-center gap-2 rounded-xl border border-warning/40 px-3 py-2 text-[13px] text-warning"><Flag size={14} /> Flagged as an impediment</div>}
+              <Description value={issue.description || ''} disabled={!canEdit} onSave={(v) => patch({ description: v })} />
+            </>
+          )}
 
           {(data.children.length > 0 || canEdit) && issue.type !== 'subtask' && (
-            <section>
+            <section className={embedded ? 'order-3' : undefined}>
               <div className="mb-2 flex items-center justify-between"><h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted">{issue.type === 'epic' ? 'Child issues' : 'Sub-tasks'}</h3>
                 {data.children.length > 0 && <span className="text-xs text-muted">{data.children.filter((c: any) => c.statusCategory === 'done').length}/{data.children.length} done</span>}</div>
               {data.children.length > 0 && <div className="mb-3"><ProgressBar value={(data.children.filter((c: any) => c.statusCategory === 'done').length / data.children.length) * 100} /></div>}
@@ -84,64 +130,68 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
           )}
 
           {issue.links?.length > 0 && (
-            <section><h3 className="mb-2 text-[13px] font-semibold uppercase tracking-wider text-muted">Linked issues</h3>
+            <section className={embedded ? 'order-4' : undefined}><h3 className="mb-2 text-[13px] font-semibold uppercase tracking-wider text-muted">Linked issues</h3>
               <div className="space-y-1.5">{issue.links.map((l: any, i: number) => <Link key={i} href={`/issues/${l.targetKey}`} className="flex items-center gap-3 rounded-xl border border-[var(--border)] px-3 py-2 hover:bg-[var(--surface-2)]"><GitBranch size={14} className="text-muted" /><span className="text-xs text-muted">{l.type}</span><span className="key font-semibold text-accent2">{l.targetKey}</span></Link>)}</div></section>
           )}
 
-          <section>
-            <Tabs id="issue-tabs" value={tab} onChange={setTab} tabs={[{ id: 'comments', label: 'Comments', count: data.comments.length }, { id: 'history', label: 'History', count: data.activity.length }, { id: 'work', label: 'Work log', count: data.worklogs.length }]} />
-            <div className="mt-4">
-              {tab === 'comments' && <Comments data={data} issueKey={issueKey} reload={reload} users={users || []} />}
-              {tab === 'history' && <History data={data} />}
-              {tab === 'work' && <Worklogs data={data} issueKey={issueKey} reload={reload} />}
-            </div>
-          </section>
+          {!embedded && activity}
         </div>
 
         {/* sidebar */}
+        {embedded ? (
+          <aside className="order-2 glass rounded-2xl p-4">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3">
+              <Prop label="Status" grid>{statusPicker}{issue.resolution && <div className="mt-1 text-xs text-muted">Resolution: {issue.resolution}</div>}</Prop>
+              <Prop label="Assignee" grid>{assigneeField}</Prop>
+              <Prop label="Reporter" grid>{reporterField}</Prop>
+              <Prop label="Priority" grid>{priorityField}</Prop>
+              <Prop label="Type" grid>{typeField}</Prop>
+              <Prop label="Story points" grid><InlineNumber value={issue.points} disabled={!canEdit} onSave={(v) => patch({ points: v })} /></Prop>
+              {sprintField && <Prop label="Sprint" grid>{sprintField}</Prop>}
+              {epicField && <Prop label="Epic" grid>{epicField}</Prop>}
+              <Prop label="Due date" grid>{dueField}</Prop>
+              {project.versions?.length > 0 && <Prop label="Fix version" grid><span>{issue.fixVersion || '—'}</span></Prop>}
+              {issue.slaDue && issue.statusCategory !== 'done' && <Prop label="SLA" grid><Sla due={issue.slaDue} /></Prop>}
+              <Prop label="Labels" grid><Labels value={issue.labels || []} disabled={!canEdit} onSave={(v) => patch({ labels: v })} /></Prop>
+              <div className="col-span-2 md:col-span-3">{timeTracking}</div>
+            </div>
+            <p className="mt-3 text-xs text-faint">Created {relTime(issue.createdAt)} · Updated {relTime(issue.updatedAt)}</p>
+          </aside>
+        ) : (
         <aside className="space-y-4">
           <div className="glass rounded-2xl p-4">
             <div className="mb-4">
               <div className="label">Status</div>
-              {canTransition ? (
-                <Dropdown align="left" trigger={({ toggle }) => <button onClick={toggle} className="flex items-center gap-2" aria-label="Change status"><StatusChip project={project} status={issue.status} /><span className="text-xs text-faint">▾</span></button>}>
-                  {(close) => <div className="w-52">{project.statuses.map((s: any) => <MenuItem key={s.id} active={s.id === issue.status} onClick={() => { close(); if (s.id !== issue.status) patch({ status: s.id }, doneLike(s.id) ? `${issue.key} marked done 🎉` : `Moved to ${s.name}`); }}><StatusChip project={project} status={s.id} small />{s.id === issue.status && <Check size={14} className="ml-auto" />}</MenuItem>)}</div>}
-                </Dropdown>
-              ) : <StatusChip project={project} status={issue.status} />}
+              {statusPicker}
               {issue.resolution && <div className="mt-1.5 text-xs text-muted">Resolution: {issue.resolution}</div>}
             </div>
-            <Prop label="Assignee">{canEdit && ab['issue.assign'] ? <Select aria-label="Assignee" value={issue.assigneeId || ''} onChange={(v) => patch({ assigneeId: v || null })} options={[{ value: '', label: 'Unassigned' }, ...(users || []).map((u) => ({ value: u._id, label: u.name }))]} /> : <div className="flex items-center gap-2"><Avatar user={issue.assignee} size={24} />{issue.assignee?.name || 'Unassigned'}</div>}
-              {canEdit && issue.assigneeId !== me.id && <button className="mt-1.5 text-xs font-semibold text-accent2 hover:underline" onClick={() => patch({ assigneeId: me.id }, 'Assigned to you')}>Assign to me</button>}</Prop>
-            <Prop label="Reporter"><div className="flex items-center gap-2"><Avatar user={issue.reporter} size={24} />{issue.reporter?.name || '—'}</div></Prop>
-            <Prop label="Priority">{canEdit ? <Select aria-label="Priority" value={issue.priority} onChange={(v) => patch({ priority: v })} options={PRIOS.map((p) => ({ value: p, label: p }))} /> : <PriorityIcon priority={issue.priority} withLabel />}</Prop>
-            <Prop label="Type">{canEdit && issue.type !== 'subtask' ? <Select aria-label="Type" value={issue.type} onChange={(v) => patch({ type: v })} options={TYPES.filter((t) => t !== 'subtask').map((t) => ({ value: t, label: t[0].toUpperCase() + t.slice(1) }))} /> : <span className="capitalize">{issue.type}</span>}</Prop>
+            <Prop label="Assignee">{assigneeField}</Prop>
+            <Prop label="Reporter">{reporterField}</Prop>
+            <Prop label="Priority">{priorityField}</Prop>
+            <Prop label="Type">{typeField}</Prop>
           </div>
           <div className="glass rounded-2xl p-4">
             <Prop label="Story points"><InlineNumber value={issue.points} disabled={!canEdit} onSave={(v) => patch({ points: v })} /></Prop>
-            {data.project.type === 'scrum' && <Prop label="Sprint">{canEdit ? <Select aria-label="Sprint" value={issue.sprintId || ''} onChange={(v) => patch({ sprintId: v || null })} options={[{ value: '', label: 'Backlog' }, ...(sprints || []).filter((s) => s.state !== 'closed' || s._id === issue.sprintId).map((s) => ({ value: s._id, label: s.name }))]} /> : <span>{data.sprint?.name || 'Backlog'}</span>}</Prop>}
-            {issue.type !== 'epic' && (epics?.items?.length ?? 0) > 0 && <Prop label="Epic">{canEdit ? <Select aria-label="Epic" value={issue.epicId || ''} onChange={(v) => patch({ epicId: v || null })} options={[{ value: '', label: 'None' }, ...(epics?.items || []).map((e) => ({ value: e._id, label: `${e.key} · ${e.summary}`.slice(0, 40) }))]} /> : <span>{data.epic?.key || 'None'}</span>}</Prop>}
-            <Prop label="Due date">{canEdit ? <input aria-label="Due date" type="date" className="input !h-9" value={issue.dueDate ? issue.dueDate.slice(0, 10) : ''} onChange={(e) => patch({ dueDate: e.target.value || null })} /> : <span>{issue.dueDate ? new Date(issue.dueDate).toLocaleDateString() : '—'}</span>}
-              {issue.dueDate && new Date(issue.dueDate) < new Date() && issue.statusCategory !== 'done' && <div className="mt-1 text-xs font-semibold text-danger">Overdue</div>}</Prop>
+            {sprintField && <Prop label="Sprint">{sprintField}</Prop>}
+            {epicField && <Prop label="Epic">{epicField}</Prop>}
+            <Prop label="Due date">{dueField}</Prop>
             <Prop label="Labels"><Labels value={issue.labels || []} disabled={!canEdit} onSave={(v) => patch({ labels: v })} /></Prop>
             {project.versions?.length > 0 && <Prop label="Fix version"><span>{issue.fixVersion || '—'}</span></Prop>}
             {issue.slaDue && issue.statusCategory !== 'done' && <Prop label="SLA"><Sla due={issue.slaDue} /></Prop>}
           </div>
-          <div className="glass rounded-2xl p-4">
-            <div className="label flex items-center gap-1.5"><Clock size={12} /> Time tracking</div>
-            <div className="mb-2 flex justify-between text-[13px]"><span>{fmtDuration(issue.timeSpent)} logged</span><span className="text-muted">{issue.estimate ? `of ${fmtDuration(issue.estimate)}` : 'no estimate'}</span></div>
-            <ProgressBar value={issue.estimate ? (issue.timeSpent / issue.estimate) * 100 : 0} color={issue.estimate && issue.timeSpent > issue.estimate ? 'var(--danger)' : undefined} />
-            {canEdit && <EstimateEditor value={issue.estimate} onSave={(sec) => patch({ estimate: sec })} />}
-          </div>
+          <div className="glass rounded-2xl p-4">{timeTracking}</div>
           <p className="px-1 text-xs text-faint">Created {relTime(issue.createdAt)} · Updated {relTime(issue.updatedAt)}</p>
         </aside>
+        )}
+        {embedded && <div className="order-5">{activity}</div>}
       </div>
       <ConfirmDialog open={confirmDel} onClose={() => setConfirmDel(false)} danger title={`Delete ${issue.key}?`} confirmLabel="Delete issue" message="This also removes its sub-tasks. This can be undone only by an administrator." onConfirm={async () => { try { await api(`/api/issues/${issueKey}`, { method: 'DELETE' }); invalidate('/api/issues'); invalidate('/api/projects'); toast.success(`${issue.key} deleted`); setConfirmDel(false); if (onClose) onClose(); else router.push(`/projects/${project.key}/board`); } catch (e) { toast.error(errMsg(e)); } }} />
     </div>
   );
 }
 
-function Prop({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="mb-3.5 last:mb-0"><div className="label !mb-1.5">{label}</div><div className="text-[13.5px]">{children}</div></div>;
+function Prop({ label, children, grid }: { label: string; children: React.ReactNode; grid?: boolean }) {
+  return <div className={clsx('min-w-0', !grid && 'mb-3.5 last:mb-0')}><div className={clsx('label', grid ? '!mb-1' : '!mb-1.5')}>{label}</div><div className="text-[13.5px]">{children}</div></div>;
 }
 
 function Sla({ due }: { due: string }) {
@@ -169,18 +219,18 @@ function EstimateEditor({ value, onSave }: { value?: number; onSave: (s: number)
   return <input autoFocus aria-label="Estimate" className="input !h-9 mt-3" placeholder="e.g. 1d 4h" value={v} onChange={(e) => setV(e.target.value)} onBlur={() => { setEdit(false); const m = [...v.matchAll(/(\d+(?:\.\d+)?)\s*([wdhm])/gi)]; const s = m.reduce((a, x) => a + Number(x[1]) * ({ w: 144000, d: 28800, h: 3600, m: 60 } as any)[x[2].toLowerCase()], 0); if (s > 0) onSave(Math.round(s)); }} onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()} />;
 }
 
-function Description({ value, onSave, disabled }: { value: string; onSave: (v: string) => void; disabled?: boolean }) {
+function Description({ value, onSave, disabled, compact }: { value: string; onSave: (v: string) => void; disabled?: boolean; compact?: boolean }) {
   const [edit, setEdit] = useState(false); const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]);
   const html = useMemo(() => mdToHtml(value), [value]);
   return (
     <section>
-      <h3 className="mb-2 text-[13px] font-semibold uppercase tracking-wider text-muted">Description</h3>
+      <h3 className={clsx(compact ? 'mb-0.5' : 'mb-2', 'text-[13px] font-semibold uppercase tracking-wider text-muted')}>Description</h3>
       {edit ? (
-        <div><textarea autoFocus aria-label="Description" className="input min-h-[170px]" value={v} onChange={(e) => setV(e.target.value)} />
+        <div><textarea autoFocus aria-label="Description" className={clsx('input', compact ? 'min-h-[120px]' : 'min-h-[170px]')} value={v} onChange={(e) => setV(e.target.value)} />
           <div className="mt-2 flex gap-2"><button className="btn btn-primary btn-sm" onClick={() => { setEdit(false); if (v !== value) onSave(v); }}>Save</button><button className="btn btn-sm" onClick={() => { setV(value); setEdit(false); }}>Cancel</button></div></div>
       ) : value ? (
-        <div className={clsx('prose-orbit rounded-xl text-[14.5px] leading-relaxed text-[var(--text)]', !disabled && 'cursor-text -mx-2 px-2 py-1 hover:bg-[var(--surface)]')} onClick={(e) => { if ((e.target as HTMLElement).closest('a')) return; !disabled && setEdit(true); }} dangerouslySetInnerHTML={{ __html: html }} />
+        <div className={clsx('prose-orbit text-[14.5px] text-[var(--text)]', compact ? 'rounded-lg leading-snug [&_p]:mb-1 [&_p:last-child]:mb-0' : 'rounded-xl leading-relaxed', !disabled && 'cursor-text -mx-2 px-2 hover:bg-[var(--surface)]', compact ? 'py-0.5' : 'py-1')} onClick={(e) => { if ((e.target as HTMLElement).closest('a')) return; !disabled && setEdit(true); }} dangerouslySetInnerHTML={{ __html: html }} />
       ) : <button disabled={disabled} className="w-full rounded-xl border border-dashed border-[var(--border-strong)] px-4 py-6 text-left text-muted hover:bg-[var(--surface)]" onClick={() => setEdit(true)}>{disabled ? 'No description' : 'Add a description…'}</button>}
     </section>
   );

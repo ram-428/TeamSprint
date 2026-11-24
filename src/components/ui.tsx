@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type ReactNode, type MouseEvent } f
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, animate, useInView } from 'framer-motion';
 import clsx from 'clsx';
+import { STATUSES } from '@/lib/statuses';
 import {
   X, Check, Search as SearchIcon, Bug, BookOpen, CheckSquare, Zap, GitBranch, ChevronsUp, ChevronUp, Equal, ChevronDown, ChevronsDown, Inbox, AlertCircle,
 } from 'lucide-react';
@@ -52,7 +53,7 @@ export function PriorityIcon({ priority, withLabel }: { priority: string; withLa
   const [I, c] = PRIO[priority as keyof typeof PRIO] || PRIO.Medium;
   return <span title={priority} className="inline-flex items-center gap-1.5" style={{ color: c, filter: priority === 'Highest' ? `drop-shadow(0 0 6px ${c})` : undefined }}><I size={16} strokeWidth={2.6} />{withLabel && <span className="text-[13px] text-text">{priority}</span>}</span>;
 }
-const STATUS_NAMES: Record<string, string> = { todo: 'To Do', progress: 'In Progress', review: 'In Review', qa: 'QA', done: 'Done', customer: 'Waiting for customer' };
+const STATUS_NAMES: Record<string, string> = { ...Object.fromEntries(STATUSES.map((s) => [s.id, s.name])), review: 'In Review', qa: 'QA', customer: 'Waiting for customer' };
 /** Human label for a status id (falls back to the project's own names, then a capitalised id). */
 export function statusName(id: string, project?: { statuses: { id: string; name: string }[] }) {
   const n = project?.statuses.find((x) => x.id === id)?.name ?? STATUS_NAMES[id] ?? id;
@@ -169,16 +170,17 @@ function useEscape(open: boolean, onClose: () => void) {
   }, [open, onClose]);
 }
 
-export function Modal({ open, onClose, title, children, width = 560, footer }: { open: boolean; onClose: () => void; title?: ReactNode; children: ReactNode; width?: number; footer?: ReactNode }) {
+export function Modal({ open, onClose, title, children, width = 560, footer, padded = true, scroll = false, centered = false }: { open: boolean; onClose: () => void; title?: ReactNode; children: ReactNode; width?: number; footer?: ReactNode; padded?: boolean; scroll?: boolean; centered?: boolean }) {
   useEscape(open, onClose);
+  const body = padded ? <div className={clsx('p-6', scroll && 'min-h-0 flex-1 overflow-y-auto')}>{children}</div> : scroll ? <div className="min-h-0 flex-1 overflow-y-auto">{children}</div> : children;
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto p-4 pt-[8vh]">
+        <div className={clsx('fixed inset-0 z-[80] flex justify-center overflow-y-auto p-4', centered ? 'items-center' : 'items-start pt-[8vh]')}>
           <motion.div className="fixed inset-0 bg-black/55" initial={{ opacity: 0, backdropFilter: 'blur(0px)' }} animate={{ opacity: 1, backdropFilter: 'blur(8px)' }} exit={{ opacity: 0, backdropFilter: 'blur(0px)' }} onClick={onClose} />
-          <motion.div role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : 'Dialog'} style={{ maxWidth: width }} className="glass-solid relative w-full rounded-3xl" initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.97 }} transition={{ type: 'spring', stiffness: 380, damping: 32 }}>
+          <motion.div role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : 'Dialog'} style={{ maxWidth: width }} className={clsx('glass-solid relative w-full rounded-3xl', scroll && 'flex flex-col overflow-hidden', scroll && (centered ? 'max-h-[min(920px,90vh)]' : 'max-h-[min(860px,84vh)]'))} initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.97 }} transition={{ type: 'spring', stiffness: 380, damping: 32 }}>
             {title && <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4"><h2 className="text-[17px] font-semibold">{title}</h2><button aria-label="Close" onClick={onClose} className="btn btn-ghost btn-icon btn-sm"><X size={16} /></button></div>}
-            <div className="p-6">{children}</div>
+            {body}
             {footer && <div className="flex justify-end gap-2 border-t border-[var(--border)] px-6 py-4">{footer}</div>}
           </motion.div>
         </div>

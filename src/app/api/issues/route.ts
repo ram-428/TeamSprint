@@ -29,7 +29,7 @@ const schema = z.object({
   description: z.string().max(20000).optional(), priority: z.enum(['Highest', 'High', 'Medium', 'Low', 'Lowest']).default('Medium'),
   assigneeId: z.string().nullish(), labels: z.array(z.string()).optional(), components: z.array(z.string()).optional(), fixVersion: z.string().optional(),
   epicId: z.string().nullish(), parentId: z.string().nullish(), sprintId: z.string().nullish(), points: z.number().min(0).max(100).nullish(),
-  estimate: z.number().min(0).nullish(), dueDate: z.string().nullish(), startDate: z.string().nullish(),
+  estimate: z.number().min(0).nullish(), dueDate: z.string().nullish(), startDate: z.string().nullish(), status: z.string().optional(),
 });
 
 export const POST = route(async (req, { user }) => {

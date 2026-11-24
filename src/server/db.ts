@@ -36,6 +36,10 @@ export async function connectDB() {
     cache.promise = resolveUri().then((uri) => mongoose.connect(uri, { dbName: process.env.MONGODB_DB || 'team-sprint', serverSelectionTimeoutMS: 15000, maxPoolSize: 20, minPoolSize: 4, retryReads: true }));
   }
   cache.conn = await cache.promise;
+  // One-time data migrations, run once per server process after the first connection.
+  const gm = globalThis as unknown as { __orbitMigrated?: Promise<void> };
+  gm.__orbitMigrated ??= import('./migrate').then(async (m) => { const r = await m.migrateStatuses(); if (r.migrated) console.log(`[migrate] moved ${r.migrated} of ${r.total} projects to the shared statuses`); }).catch((e) => { console.error('[migrate] status migration failed', e); });
+  await gm.__orbitMigrated;
   return cache.conn;
 }
 
