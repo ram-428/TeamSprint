@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { route, AppError, audit, targetOrg } from '@/server/api';
 import { User, Org, Project } from '@/server/models';
 import { hash } from '@/server/auth';
-import { sendInviteMail } from '@/server/mail';
+import { sendInviteMail, siteUrl } from '@/server/mail';
 
 export const GET = route(async (req, { user }) => {
   const orgId = targetOrg(user, req);
@@ -25,6 +25,6 @@ export const POST = route(async (req, { user }) => {
   const tmp = 'Welcome-' + Math.random().toString(36).slice(2, 8) + '1A';
   const u = await User.create({ ...d, passwordHash: await hash(tmp), orgId, color: COLORS[Math.floor(Math.random() * COLORS.length)] });
   await audit({ ...user, orgId }, 'org.member_invited', d.email, { role: d.role });
-  const emailed = await sendInviteMail(d.email, d.name, tmp, user.name, org?.name);
+  const emailed = await sendInviteMail(d.email, d.name, tmp, user.name, org?.name, siteUrl(req));
   return { id: u._id, temporaryPassword: tmp, emailed };
 });
