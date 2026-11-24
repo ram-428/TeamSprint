@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center p-6">
       <ThemeSwitch className="absolute right-4 top-4 z-30" />
-      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="glass w-full max-w-[440px] rounded-[28px] p-8">
+      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="glass w-full max-w-[440px] rounded-[24px] p-6 sm:rounded-[28px] sm:p-8">
         <Logo />
         <h1 className="mt-6 text-[26px] font-semibold">{challenge ? 'Reset your password' : 'Forgot your password?'}</h1>
         <p className="mb-6 mt-1 text-muted">

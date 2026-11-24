@@ -19,7 +19,7 @@ export default function AutomationPage({ params }: { params: Promise<{ key: stri
   const remove = async (r: any) => { try { await api(`/api/projects/${key}/automation?id=${r._id}`, { method: 'DELETE' }); reload(); toast.success('Rule deleted'); } catch (e) { toast.error(errMsg(e)); } };
   return (
     <div className="max-w-[900px]">
-      <div className="mb-5 flex items-center justify-between"><div><h2 className="text-[18px] font-semibold">Automation rules</h2><p className="text-[13px] text-muted">No-code rules that react to what happens in this project.</p></div>{can && <button className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={15} /> Create rule</button>}</div>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-[18px] font-semibold">Automation rules</h2><p className="text-[13px] text-muted">No-code rules that react to what happens in this project.</p></div>{can && <button className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={15} /> Create rule</button>}</div>
       {loading ? <Skeleton className="h-40" /> : !data?.length ? <Card><EmptyState title="No automation yet" text="Create a rule to auto-assign, label or notify." icon={<Zap size={28} />} /></Card> : (
         <div className="space-y-3"><AnimatePresence>{data.map((r) => (
           <motion.div key={r._id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.97 }}>

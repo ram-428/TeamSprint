@@ -227,6 +227,12 @@ kbd { font-family: var(--font-mono), monospace; font-size: 11px; padding: 1px 6p
 /* react-flow-free timeline helpers */
 .today-line { position: absolute; top: 0; bottom: 0; width: 2px; background: linear-gradient(var(--accent-2), transparent); z-index: 2; }
 
+/* phones: 16px inputs stop iOS Safari from zooming the page on focus; media never overflows the screen */
+img, video, canvas { max-width: 100%; }
+@media (max-width: 639px) {
+  .input, textarea.input, select.input { font-size: 16px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
 }

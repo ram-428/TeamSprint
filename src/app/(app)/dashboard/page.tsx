@@ -24,15 +24,15 @@ export default function Dashboard() {
     <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-[1280px]">
       <motion.div variants={item} className="mb-7">
         <p className="text-[13px] font-medium text-accent2">{now ? now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : ' '}</p>
-        <h1 className="mt-1 text-[34px] font-semibold leading-tight">{greet}, <span className="grad-text">{me.name.split(' ')[0]}</span></h1>
+        <h1 className="mt-1 text-[26px] font-semibold leading-tight sm:text-[34px]">{greet}, <span className="grad-text">{me.name.split(' ')[0]}</span></h1>
         <p className="mt-1 text-muted">{loading || !data ? 'Loading your day…' : data.stats.open === 0 ? 'Nothing assigned to you — enjoy the calm.' : `You have ${data.stats.open} open issue${data.stats.open === 1 ? '' : 's'}${data.stats.overdue ? `, ${data.stats.overdue} overdue` : ''}${data.stats.due ? ` and ${data.stats.due} due this week` : ''}.`}</p>
       </motion.div>
 
       <motion.div variants={item} className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[{ l: 'Open issues', v: data?.stats.open, i: Flame, c: '#7c5cff' }, { l: 'Due this week', v: data?.stats.due, i: CalendarClock, c: '#22d3ee' }, { l: 'Overdue', v: data?.stats.overdue, i: AlertTriangle, c: '#f87171' }, { l: 'Hours this week', v: data ? Math.round((data.stats.weekSeconds / 3600) * 10) / 10 : undefined, i: Clock, c: '#34d399', d: 1 }].map((s) => (
-          <Card key={s.l} spotlight className="p-5">
-            <div className="flex items-center justify-between"><span className="text-[13px] text-muted">{s.l}</span><span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: `${s.c}22`, color: s.c }}><s.i size={18} /></span></div>
-            <div className="mt-3 text-[36px] font-semibold leading-none">{s.v === undefined ? <Skeleton className="h-9 w-16" /> : <CountUp value={s.v} decimals={s.d || 0} />}</div>
+          <Card key={s.l} spotlight className="p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-2"><span className="text-[13px] text-muted">{s.l}</span><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: `${s.c}22`, color: s.c }}><s.i size={18} /></span></div>
+            <div className="mt-3 text-[28px] font-semibold leading-none sm:text-[36px]">{s.v === undefined ? <Skeleton className="h-9 w-16" /> : <CountUp value={s.v} decimals={s.d || 0} />}</div>
           </Card>
         ))}
       </motion.div>
@@ -47,7 +47,7 @@ export default function Dashboard() {
                   {data.mine.slice(0, 10).map((i: any, idx: number) => (
                     <motion.div key={i._id} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 + idx * 0.04 }}>
                       <Link href={`/issues/${i.key}`} className="group flex items-center gap-3 rounded-2xl px-3.5 py-3 transition-colors hover:bg-[var(--surface-2)]">
-                        <TypeIcon type={i.type} /><span className="key w-[74px] shrink-0">{i.key}</span>
+                        <TypeIcon type={i.type} /><span className="key w-[64px] shrink-0 sm:w-[74px]">{i.key}</span>
                         <span className="min-w-0 flex-1 truncate font-medium">{i.summary}</span>
                         {i.dueDate && <span className={`hidden text-xs sm:inline ${new Date(i.dueDate) < new Date() ? 'font-semibold text-danger' : 'text-muted'}`}>{new Date(i.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>}
                         <PriorityIcon priority={i.priority} />

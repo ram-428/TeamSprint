@@ -22,27 +22,27 @@ export function LoginBoard() {
   const total = CARDS.reduce((a, c) => a + c.pts, 0);
 
   return (
-    <div className="glass relative w-full max-w-[780px] overflow-hidden rounded-[26px] p-4" style={{ transform: 'translateZ(0)' }}>
+    <div className="glass relative w-full max-w-[780px] overflow-hidden rounded-[26px] p-3 sm:p-4" style={{ transform: 'translateZ(0)' }}>
       <div className="mb-3 flex items-center gap-2 px-1">
         <span className="flex gap-1.5">{['#ff5f57', '#febc2e', '#28c840'].map((c) => <i key={c} className="h-2.5 w-2.5 rounded-full" style={{ background: c }} />)}</span>
         <span className="ml-2 text-[12px] font-semibold text-muted">Sprint 12 · Checkout & SSO</span>
         <span className="ml-auto flex items-center gap-2 text-[11.5px] text-muted"><span className="pulse-dot h-1.5 w-1.5 rounded-full bg-success text-success" />Live</span>
       </div>
       <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-[var(--surface-2)]"><motion.div className="grad-bar h-full rounded-full" animate={{ width: `${(done / total) * 100}%` }} transition={{ type: 'spring', stiffness: 80, damping: 18 }} /></div>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {COLS.map((col, ci) => (
-          <div key={col.name} className="h-[284px] rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2">
+          <div key={col.name} className="h-[284px] min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-1.5 sm:p-2">
             <div className="mb-2 flex items-center gap-1.5 px-1 pt-0.5"><span className="h-2 w-2 rounded-full" style={{ background: col.c, boxShadow: `0 0 8px ${col.c}` }} /><span className="text-[10.5px] font-bold uppercase tracking-wide">{col.name}</span><span className="ml-auto text-[10.5px] text-faint">{CARDS.filter((_, i) => colOf(i) === ci).length}</span></div>
             <div className="flex flex-col gap-2">
               <AnimatePresence initial={false}>
                 {CARDS.map((c, i) => colOf(i) === ci && (
-                  <motion.div key={c.id} layoutId={`lb-${c.id}`} layout="position" transition={{ type: 'spring', stiffness: 260, damping: 26 }} className="relative flex h-[74px] shrink-0 flex-col justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] p-2.5 shadow-[0_6px_18px_-10px_rgba(0,0,0,.5)]">
+                  <motion.div key={c.id} layoutId={`lb-${c.id}`} layout="position" transition={{ type: 'spring', stiffness: 260, damping: 26 }} className="relative flex h-[74px] shrink-0 flex-col justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-solid)] p-2 sm:p-2.5 shadow-[0_6px_18px_-10px_rgba(0,0,0,.5)]">
                     <div className="line-clamp-2 break-words text-[11.5px] font-medium leading-[1.3]" title={c.t}>{c.t}</div>
                     <div className="flex items-center gap-1.5">
-                      <span className="flex h-4 w-4 items-center justify-center rounded" style={{ background: `${c.c}28`, color: c.c }}><c.I size={10} strokeWidth={2.6} /></span>
-                      <span className="key text-[10px]">{c.k}</span>
+                      <span className="hidden h-4 w-4 shrink-0 items-center justify-center rounded sm:flex" style={{ background: `${c.c}28`, color: c.c }}><c.I size={10} strokeWidth={2.6} /></span>
+                      <span className="key whitespace-nowrap text-[10px]">{c.k}</span>
                       <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--surface-2)] px-1 text-[9.5px] font-semibold text-muted">{c.pts}</span>
-                      <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-[8px] font-bold text-white" style={{ background: c.u[0] }}>{c.u[1]}</span>
+                      <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[8px] font-bold text-white" style={{ background: c.u[0] }}>{c.u[1]}</span>
                     </div>
                     {ci === 2 && <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-success text-white"><Check size={10} strokeWidth={3} /></motion.span>}
                   </motion.div>

@@ -43,7 +43,7 @@ function LoginForm() {
   }
 
   return (
-    <div ref={wrap} onPointerMove={onMove} className="relative flex h-[100dvh] flex-col overflow-hidden">
+    <div ref={wrap} onPointerMove={onMove} className="relative flex min-h-[100dvh] flex-col overflow-x-hidden md:h-[100dvh] md:overflow-hidden">
       <motion.div aria-hidden style={{ x: blobX, y: blobY }} className="pointer-events-none absolute left-[18%] top-[22%] h-[520px] w-[520px] rounded-full bg-[var(--accent)] opacity-20 blur-[120px]" />
       <div aria-hidden className="pointer-events-none absolute inset-0">{Array.from({ length: 22 }, (_, i) => (
         <span key={i} className="absolute rounded-full bg-[var(--accent-2)]" style={{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 100}%`, width: 2 + (i % 3), height: 2 + (i % 3), opacity: 0.25, animation: `float ${5 + (i % 5)}s ease-in-out ${i * 0.3}s infinite` }} />))}</div>
@@ -51,29 +51,29 @@ function LoginForm() {
 
       {/* logo row (top of the page) */}
       <div className="relative z-30 flex shrink-0 items-start justify-between gap-4 px-4 pt-4 sm:px-6 lg:px-10 lg:pt-5 xl:px-14">
-        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="hidden lg:block"><Logo variant="full" size={68} /></motion.div>
+        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="hidden md:block"><Logo variant="full" size={68} /></motion.div>
         <ThemeSwitch className="ml-auto" />
       </div>
 
-      <div className="relative grid min-h-0 flex-1 lg:grid-cols-[1.1fr_1fr]">
+      <div className="relative grid min-h-0 flex-1 md:grid-cols-[1.1fr_1fr]">
       {/* hero */}
-      <motion.div animate={ok ? { opacity: 0, x: -40, filter: 'blur(6px)' } : { opacity: 1, x: 0, filter: 'blur(0px)' }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="relative hidden min-h-0 flex-col justify-between overflow-hidden px-10 pb-8 pt-8 lg:flex xl:px-14">
+      <motion.div animate={ok ? { opacity: 0, x: -40, filter: 'blur(6px)' } : { opacity: 1, x: 0, filter: 'blur(0px)' }} transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }} className="relative flex min-h-0 flex-col justify-between gap-6 overflow-hidden px-4 pb-2 pt-2 sm:px-6 md:pb-8 md:pt-8 lg:px-10 xl:px-14">
         <div className="relative">
-          <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }} className="whitespace-nowrap text-[clamp(20px,2.8vw,52px)] font-semibold leading-[1.15]">
+          <motion.h1 initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }} className="text-[clamp(24px,6vw,36px)] font-semibold leading-[1.15] md:whitespace-nowrap md:text-[clamp(18px,2.8vw,52px)]">
             {/* single line (nowrap): the word takes its natural width and "together." glides to follow it, so there is never a gap or a reflow */}
             Where teams{' '}<motion.span layout="position" className="relative inline-block align-bottom"><AnimatePresence mode="wait" initial={false}><motion.span key={word} initial={{ y: '60%', opacity: 0, filter: 'blur(6px)' }} animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }} exit={{ y: '-60%', opacity: 0, filter: 'blur(6px)' }} transition={{ duration: 0.35 }} className="grad-text inline-block">{WORDS[word]}</motion.span></AnimatePresence></motion.span>{' '}<motion.span layout="position" className="inline-block">together.</motion.span>
           </motion.h1>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mt-4 max-w-md text-[16.5px] text-muted">Boards, sprints, roadmaps and reports in one fast workspace — built for teams that move.</motion.p>
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }} style={{ rotateX: rotX, rotateY: rotY, transformPerspective: 1100 }} className="mt-9 [@media(max-height:820px)]:mt-5 [@media(max-height:820px)]:[zoom:0.78] [@media(max-height:680px)]:[zoom:0.6]"><LoginBoard /></motion.div>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="mt-3 max-w-md text-[15px] text-muted sm:mt-4 sm:text-[16.5px]">Boards, sprints, roadmaps and reports in one fast workspace — built for teams that move.</motion.p>
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }} style={{ rotateX: rotX, rotateY: rotY, transformPerspective: 1100 }} className="mt-6 md:mt-9 md:max-lg:[zoom:0.85] md:[@media(max-height:820px)]:mt-5 md:[@media(max-height:820px)]:[zoom:0.78] md:[@media(max-height:680px)]:[zoom:0.6]"><LoginBoard /></motion.div>
         </div>
-        <div className="relative flex gap-6 text-[12.5px] text-muted">{[[Zap, 'Instant boards'], [ShieldCheck, 'Role-based access'], [Gauge, 'Real-time reports']].map(([I, t]: any, i) => <motion.span key={t} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 + i * 0.12 }} className="flex items-center gap-1.5"><I size={14} className="text-accent2" />{t}</motion.span>)}<span className="ml-auto text-faint">© {new Date().getFullYear()} Team Sprint</span></div>
+        <div className="relative flex flex-wrap gap-x-6 gap-y-2 text-[12.5px] text-muted">{[[Zap, 'Instant boards'], [ShieldCheck, 'Role-based access'], [Gauge, 'Real-time reports']].map(([I, t]: any, i) => <motion.span key={t} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 + i * 0.12 }} className="flex items-center gap-1.5"><I size={14} className="text-accent2" />{t}</motion.span>)}<span className="ml-auto text-faint">© {new Date().getFullYear()} Team Sprint</span></div>
       </motion.div>
 
       {/* form */}
-      <div className="relative flex min-h-0 items-center justify-center overflow-y-auto p-4 sm:p-6 lg:items-start lg:pt-8">
+      <div className="relative flex min-h-0 items-start justify-center p-4 pb-8 sm:p-6 md:overflow-y-auto md:pt-8">
         <motion.div initial={{ opacity: 0, y: 30, scale: 0.96 }} animate={ok ? { opacity: 0, scale: 1.06, y: -12 } : { opacity: 1, y: 0, scale: 1 }} transition={{ duration: ok ? 0.5 : 0.7, ease: [0.22, 1, 0.36, 1] }} className="relative w-full max-w-[420px]">
           <div className="relative rounded-2xl border border-[var(--border)] p-6 shadow-[0_24px_60px_-24px_rgba(60,40,140,.35)] sm:p-8" style={{ background: 'var(--surface-solid)' }}>
-            <div className="mb-6 lg:hidden"><Logo variant="full" size={56} /></div>
+            <div className="mb-6 md:hidden"><Logo variant="full" size={56} /></div>
             <motion.h2 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-[24px] font-semibold tracking-tight">Sign in to your account</motion.h2>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-6 mt-1.5 text-[14px] text-muted">Enter your work email and password to access your workspace.</motion.p>
             <form onSubmit={submit} className="space-y-4" noValidate>

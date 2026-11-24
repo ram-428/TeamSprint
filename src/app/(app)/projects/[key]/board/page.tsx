@@ -57,19 +57,19 @@ export default function BoardPage({ params }: { params: Promise<{ key: string }>
               <p className="mt-0.5 flex items-center gap-1.5 text-[13px] text-muted"><Target size={13} />{active.goal || 'No sprint goal set'}</p></div>
             <div className="flex gap-6 text-center"><div><div className="text-[22px] font-semibold tabular-nums">{daysLeft}</div><div className="text-[11px] uppercase tracking-wider text-muted">days left</div></div><div><div className="text-[22px] font-semibold tabular-nums">{done}<span className="text-muted">/{total}</span></div><div className="text-[11px] uppercase tracking-wider text-muted">points</div></div></div>
             {ab['sprint.manage'] && <button className="btn" onClick={() => setComplete(true)}><CheckCircle2 size={15} /> Complete sprint</button>}
-          </>) : <div className="flex flex-1 items-center justify-between gap-4"><div><h2 className="text-[17px] font-semibold">No active sprint</h2><p className="text-[13px] text-muted">Plan a sprint in the backlog to see its board here.</p></div><Link href={`/projects/${key}/backlog`} className="btn btn-primary">Go to backlog</Link></div>}
+          </>) : <div className="flex flex-1 flex-wrap items-center justify-between gap-4"><div><h2 className="text-[17px] font-semibold">No active sprint</h2><p className="text-[13px] text-muted">Plan a sprint in the backlog to see its board here.</p></div><Link href={`/projects/${key}/backlog`} className="btn btn-primary">Go to backlog</Link></div>}
         </Card>
       )}
 
       <div className="mb-4 flex flex-wrap items-center gap-2.5">
-        <div className="relative"><Search size={15} className="absolute left-3 top-[11px] text-faint" /><input aria-label="Filter board" className="input !h-9 !w-60 !pl-9" placeholder="Filter issues" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        <div className="relative w-full sm:w-auto"><Search size={15} className="absolute left-3 top-[11px] text-faint" /><input aria-label="Filter board" className="input !h-9 !w-full !pl-9 sm:!w-60" placeholder="Filter issues" value={q} onChange={(e) => setQ(e.target.value)} /></div>
         <button aria-pressed={mine} onClick={() => setMine(!mine)} className={clsx('btn btn-sm', mine && '!border-[var(--accent)] !bg-[var(--accent-soft)]')}><Avatar user={me} size={18} /> Only my issues</button>
         <button aria-pressed={lanes} onClick={() => { setLanes(!lanes); try { localStorage.setItem(`orbit-lanes-${key}`, lanes ? '0' : '1'); } catch { /* ignore */ } }} className={clsx('btn btn-sm', lanes && '!border-[var(--accent)] !bg-[var(--accent-soft)]')}><Users size={14} /> Swimlanes by assignee</button>
         <span className="ml-auto flex items-center gap-3 text-[12.5px] text-muted"><span className="flex items-center gap-1"><Flag size={12} className="text-warning" />{visible.filter((i) => i.flagged).length} flagged</span><span>{visible.length} issues</span></span>
         {ab['issue.create'] && <button className="btn btn-primary btn-sm" onClick={() => setCreate({ open: true })}><Plus size={15} /> Create issue</button>}
       </div>
 
-      {loading ? <div className="flex gap-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[420px] w-[300px] shrink-0" />)}</div>
+      {loading ? <div className="flex gap-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[420px] w-[min(300px,calc(100vw-4rem))] shrink-0" />)}</div>
         : visible.length === 0 && (project.type !== 'scrum' || active) && !q && !mine ? <Card><EmptyState title="Nothing on the board yet" text="Create your first issue to get things moving." action={ab['issue.create'] && <button className="btn btn-primary" onClick={() => setCreate({ open: true })}><Plus size={15} />Create issue</button>} /></Card>
         : project.type === 'scrum' && !active ? null
         : (

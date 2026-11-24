@@ -22,7 +22,7 @@ export default function ListPage({ params }: { params: Promise<{ key: string }> 
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-2.5">
         <Tabs id="list-cat" value={cat} onChange={setCat} tabs={[{ id: 'all', label: 'All', count: data?.items.length }, { id: 'todo', label: 'To do', count: count('todo') }, { id: 'inprogress', label: 'In progress', count: count('inprogress') }, { id: 'done', label: 'Done', count: count('done') }]} />
-        <div className="relative"><Search size={15} className="absolute left-3 top-[11px] text-faint" /><input aria-label="Search issues" className="input !h-9 !w-56 !pl-9" placeholder="Search issues" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        <div className="relative w-full sm:w-auto"><Search size={15} className="absolute left-3 top-[11px] text-faint" /><input aria-label="Search issues" className="input !h-9 !w-full !pl-9 sm:!w-56" placeholder="Search issues" value={q} onChange={(e) => setQ(e.target.value)} /></div>
         <Select aria-label="Type filter" className="!h-9 !w-36" value={type} onChange={setType} options={[{ value: '', label: 'All types' }, ...['epic', 'story', 'task', 'bug', 'subtask'].map((t) => ({ value: t, label: t[0].toUpperCase() + t.slice(1) }))]} />
         {ab['issue.create'] && <button className="btn btn-primary btn-sm ml-auto" onClick={() => setCreate(true)}><Plus size={15} /> Create issue</button>}
       </div>

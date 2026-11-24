@@ -41,7 +41,7 @@ function Search() {
 
   return (
     <div className="mx-auto max-w-[1380px]">
-      <PageHeader
+<PageHeader
         icon={<span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-2)] text-white shadow-lg shadow-[var(--accent)]/25"><Filter size={20} /></span>}
         title="Filters" subtitle="Find any issue with OQL, Team Sprint's JQL-style query language" />
       <div className="grid gap-6 xl:grid-cols-[1fr_300px]">
