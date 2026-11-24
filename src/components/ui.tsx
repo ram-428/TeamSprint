@@ -3,6 +3,7 @@ import { useEffect, useId, useRef, useState, type ReactNode, type MouseEvent } f
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, animate, useInView } from 'framer-motion';
 import clsx from 'clsx';
+import { STATUSES } from '@/lib/statuses';
 import {
   X, Check, Search as SearchIcon, Bug, BookOpen, CheckSquare, Zap, GitBranch, ChevronsUp, ChevronUp, Equal, ChevronDown, ChevronsDown, Inbox, AlertCircle,
 } from 'lucide-react';
@@ -52,7 +53,7 @@ export function PriorityIcon({ priority, withLabel }: { priority: string; withLa
   const [I, c] = PRIO[priority as keyof typeof PRIO] || PRIO.Medium;
   return <span title={priority} className="inline-flex items-center gap-1.5" style={{ color: c, filter: priority === 'Highest' ? `drop-shadow(0 0 6px ${c})` : undefined }}><I size={16} strokeWidth={2.6} />{withLabel && <span className="text-[13px] text-text">{priority}</span>}</span>;
 }
-const STATUS_NAMES: Record<string, string> = { todo: 'To Do', progress: 'In Progress', review: 'In Review', qa: 'QA', done: 'Done', customer: 'Waiting for customer' };
+const STATUS_NAMES: Record<string, string> = { ...Object.fromEntries(STATUSES.map((s) => [s.id, s.name])), review: 'In Review', qa: 'QA', customer: 'Waiting for customer' };
 /** Human label for a status id (falls back to the project's own names, then a capitalised id). */
 export function statusName(id: string, project?: { statuses: { id: string; name: string }[] }) {
   const n = project?.statuses.find((x) => x.id === id)?.name ?? STATUS_NAMES[id] ?? id;
