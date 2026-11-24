@@ -4,32 +4,11 @@ import { AppError, forbidden, notFound, notify, logActivity } from './api';
 import { can, type ProjectLike } from './rbac';
 import type { AuthUser } from './auth';
 
-export const WORKFLOWS: Record<string, { id: string; name: string; category: 'todo' | 'inprogress' | 'done'; color: string }[]> = {
-  scrum: [
-    { id: 'todo', name: 'To Do', category: 'todo', color: '#94a3b8' },
-    { id: 'progress', name: 'In Progress', category: 'inprogress', color: '#7c5cff' },
-    { id: 'review', name: 'In Review', category: 'inprogress', color: '#22d3ee' },
-    { id: 'qa', name: 'QA', category: 'inprogress', color: '#fbbf24' },
-    { id: 'done', name: 'Done', category: 'done', color: '#34d399' },
-  ],
-  kanban: [
-    { id: 'todo', name: 'To Do', category: 'todo', color: '#94a3b8' },
-    { id: 'progress', name: 'In Progress', category: 'inprogress', color: '#7c5cff' },
-    { id: 'done', name: 'Done', category: 'done', color: '#34d399' },
-  ],
-  business: [
-    { id: 'todo', name: 'Backlog', category: 'todo', color: '#94a3b8' },
-    { id: 'progress', name: 'Doing', category: 'inprogress', color: '#7c5cff' },
-    { id: 'review', name: 'Review', category: 'inprogress', color: '#22d3ee' },
-    { id: 'done', name: 'Done', category: 'done', color: '#34d399' },
-  ],
-  service_desk: [
-    { id: 'todo', name: 'Waiting for support', category: 'todo', color: '#94a3b8' },
-    { id: 'progress', name: 'In progress', category: 'inprogress', color: '#7c5cff' },
-    { id: 'customer', name: 'Waiting for customer', category: 'inprogress', color: '#fbbf24' },
-    { id: 'done', name: 'Resolved', category: 'done', color: '#34d399' },
-  ],
-};
+import { STATUSES, type StatusDef } from '../lib/statuses';
+export { STATUSES, type StatusDef };
+
+/** Every project type now uses the same shared status set. */
+export const WORKFLOWS: Record<string, StatusDef[]> = { scrum: STATUSES, kanban: STATUSES, business: STATUSES, service_desk: STATUSES };
 
 export const PRIORITIES = ['Highest', 'High', 'Medium', 'Low', 'Lowest'] as const;
 export const ISSUE_TYPES = ['epic', 'story', 'task', 'bug', 'subtask'] as const;
@@ -72,7 +51,7 @@ export async function applyIssueUpdate(user: AuthUser, issue: any, project: any,
     issue.statusCategory = st.category;
     issue.statusChangedAt = new Date();
     issue.resolvedAt = st.category === 'done' ? new Date() : undefined;
-    issue.resolution = st.category === 'done' ? patch.resolution || 'Done' : undefined;
+    issue.resolution = st.category === 'done' ? patch.resolution || (st.id === 'cancelled' ? "Won't Do" : 'Done') : undefined;
   }
   const simple = ['summary', 'description', 'priority', 'type', 'points', 'dueDate', 'startDate', 'labels', 'components', 'fixVersion', 'flagged', 'estimate'] as const;
   for (const f of simple) if (f in patch) issue[f] = patch[f] === '' ? undefined : patch[f];
@@ -129,7 +108,8 @@ export async function createIssue(user: AuthUser, project: any, data: Record<str
   requirePerm(user, 'issue.create', project);
   const p = await Project.findOneAndUpdate({ _id: project._id }, { $inc: { issueCounter: 1 } }, { new: true }).lean<any>();
   const number = p.issueCounter;
-  const first = project.statuses[0];
+  const first = (data.status && project.statuses.find((s: any) => s.id === data.status)) || project.statuses[0];
+  if (data.status && first.id !== data.status) throw new AppError(400, 'BAD_STATUS', 'Unknown status for this project');
   const last = await Issue.findOne({ projectId: project._id }).sort({ rank: -1 }).select('rank').lean<any>();
   const issue = await Issue.create({
     orgId: project.orgId, projectId: project._id, projectKey: project.key, number, key: `${project.key}-${number}`,
@@ -138,6 +118,7 @@ export async function createIssue(user: AuthUser, project: any, data: Record<str
     labels: data.labels || [], components: data.components || [], fixVersion: data.fixVersion, epicId: data.epicId, parentId: data.parentId,
     sprintId: data.sprintId, points: data.points, estimate: data.estimate, dueDate: data.dueDate, startDate: data.startDate,
     rank: (last?.rank ?? 0) + 1000, watchers: [user.id], statusChangedAt: new Date(),
+    ...(first.category === 'done' ? { resolvedAt: new Date(), resolution: first.id === 'cancelled' ? "Won't Do" : 'Done' } : {}),
     slaDue: project.type === 'service_desk' ? new Date(Date.now() + 8 * 36e5) : undefined,
   });
   await logActivity(user, issue, 'created');
