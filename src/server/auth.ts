@@ -28,13 +28,14 @@ export const compare = (pw: string, h: string) => bcrypt.compare(pw, h);
 
 export type AuthUser = {
   id: string; name: string; email: string; orgId: string | null; role: string; platformRole: string;
-  title?: string; color?: string; theme: string; impersonatedBy?: string;
+  title?: string; color?: string; avatarUrl?: string; theme: string; impersonatedBy?: string;
   /** super admin only: their own organization, and whether they are currently working inside a different one */
   homeOrgId?: string | null; actingOrg?: boolean;
 };
 
 const userCache = new Map<string, { at: number; u: AuthUser | null }>();
-export const dropUserCache = (id?: string) => (id ? userCache.delete(id) : userCache.clear());
+/** Forget cached copies of a user (cache keys are `uid:tv:imp:org`) so profile changes show up immediately. */
+export const dropUserCache = (id?: string) => { if (!id) return userCache.clear(); for (const k of userCache.keys()) if (k.startsWith(id + ':')) userCache.delete(k); };
 
 /** Resolves the logged-in user from the cookie (null if none / invalid / suspended). */
 export async function getUser(): Promise<AuthUser | null> {
@@ -48,11 +49,11 @@ export async function getUser(): Promise<AuthUser | null> {
   const hit = userCache.get(ck);
   if (hit && Date.now() - hit.at < 10_000) return hit.u;
   await connectDB();
-  const u = await User.findById(s.uid).select('name email orgId role platformRole title color theme status tokenVersion').lean<any>();
+  const u = await User.findById(s.uid).select('name email orgId role platformRole title color avatarUrl theme status tokenVersion').lean<any>();
   if (!u || u.status !== 'active' || (u.tokenVersion ?? 0) !== (s.tv ?? 0)) { userCache.set(ck, { at: Date.now(), u: null }); return null; }
   const res: AuthUser = {
     id: String(u._id), name: u.name, email: u.email, orgId: u.orgId ? String(u.orgId) : null,
-    role: u.role, platformRole: u.platformRole, title: u.title, color: u.color, theme: u.theme || 'simple',
+    role: u.role, platformRole: u.platformRole, title: u.title, color: u.color, avatarUrl: u.avatarUrl, theme: u.theme || 'simple',
     impersonatedBy: s.imp,
   };
   if (u.platformRole === 'super_admin') {

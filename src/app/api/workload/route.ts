@@ -5,7 +5,7 @@ import { visibleProjectIds } from '@/server/query';
 /** Per-person open workload (points + hours) vs weekly capacity. */
 export const GET = route(async (_req, { user }) => {
   const pids = await visibleProjectIds(user);
-  const users = await User.find({ orgId: user.orgId, status: 'active', role: { $ne: 'guest' } }).select('name color title capacityHours').lean<any[]>();
+  const users = await User.find({ orgId: user.orgId, status: 'active', role: { $ne: 'guest' } }).select('name color title capacityHours avatarUrl').lean<any[]>();
   const open = await Issue.find({ projectId: { $in: pids }, deletedAt: null, statusCategory: { $ne: 'done' }, assigneeId: { $in: users.map((u) => u._id) } }).select('assigneeId points estimate dueDate priority key summary').lean<any[]>();
   const now = Date.now();
   return users.map((u) => {

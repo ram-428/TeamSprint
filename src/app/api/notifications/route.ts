@@ -6,7 +6,7 @@ export const GET = route(async (req, { user }) => {
   const filter: any = { userId: user.id };
   if (sp.get('unread') === '1') filter.readAt = null;
   const items = await Notification.find(filter).sort({ createdAt: -1 }).limit(Number(sp.get('limit') || 50)).lean<any[]>();
-  const actors = await User.find({ _id: { $in: items.map((i) => i.actorId).filter(Boolean) } }).select('name color').lean<any[]>();
+  const actors = await User.find({ _id: { $in: items.map((i) => i.actorId).filter(Boolean) } }).select('name color avatarUrl').lean<any[]>();
   return {
     unread: await Notification.countDocuments({ userId: user.id, readAt: null }),
     items: items.map((i) => ({ ...i, actor: actors.find((a) => String(a._id) === String(i.actorId)) })),

@@ -13,7 +13,7 @@ export const GET = route(async (req, { user }) => {
     scoped ? (sc.orgId ? 1 : 0) : Org.countDocuments(), User.countDocuments(sc), Project.countDocuments({ ...sc, archived: false }), Issue.countDocuments({ ...sc, deletedAt: null }),
     Audit.countDocuments({ ...sc, action: 'auth.locked', createdAt: { $gte: since } }),
     Audit.find(sc).sort({ createdAt: -1 }).limit(12).lean<any[]>(),
-    User.find(sc).sort({ createdAt: -1 }).limit(5).select('name email createdAt color').lean<any[]>(),
+    User.find(sc).sort({ createdAt: -1 }).limit(5).select('name email createdAt color avatarUrl').lean<any[]>(),
     User.countDocuments({ ...sc, lastLoginAt: { $gte: since } }),
   ]);
   const days = [];

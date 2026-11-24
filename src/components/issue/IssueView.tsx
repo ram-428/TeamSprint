@@ -9,6 +9,7 @@ import { api, errMsg, invalidate, toast, useApi } from '@/lib/api';
 import { Avatar, ConfirmDialog, Dropdown, MenuItem, PriorityIcon, ProgressBar, Select, Skeleton, Spinner, StatusChip, Tabs, TypeIcon, fmtDuration, relTime, ErrorState } from '../ui';
 import { mdToHtml } from '@/lib/md';
 import { useMe } from '../UserContext';
+import { AttachmentGallery, AttachmentPicker } from '../Attachments';
 
 const PRIOS = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
 const TYPES = ['epic', 'story', 'task', 'bug', 'subtask'];
@@ -73,13 +74,13 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
   return (
     <div className={clsx('flex flex-col', embedded ? 'min-h-full' : '')}>
       {/* header */}
-      <div className={clsx('flex items-center justify-between gap-3 border-b border-[var(--border)] px-6 py-4', embedded && 'sticky top-0 z-10 bg-[var(--surface-solid)]')}>
+      <div className={clsx('flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-4 sm:px-6', embedded && 'sticky top-0 z-10 bg-[var(--surface-solid)]')}>
         <div className="flex min-w-0 items-center gap-2 text-[13px] text-muted">
-          <Link href={`/projects/${project.key}/board`} className="hover:text-text">{project.name}</Link><ChevronRight size={13} />
+          <Link href={`/projects/${project.key}/board`} className="min-w-0 truncate hover:text-text">{project.name}</Link><ChevronRight size={13} />
           {data.epic && <><Link href={`/issues/${data.epic.key}`} className="max-w-[160px] truncate hover:text-text">{data.epic.key}</Link><ChevronRight size={13} /></>}
-          <TypeIcon type={issue.type} size={18} /><span className="key font-semibold text-text">{issue.key}</span>
+          <TypeIcon type={issue.type} size={18} /><span className="key shrink-0 font-semibold text-text">{issue.key}</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5">
           <Dropdown trigger={({ toggle }) => <button onClick={toggle} className="btn btn-sm btn-ghost" aria-label="Actions"><MoreHorizontal size={17} /></button>}>
             {(close) => (
               <div className="w-52">
@@ -95,7 +96,7 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
         </div>
       </div>
 
-      <div className={clsx(embedded ? 'flex flex-col gap-4 px-6 py-5' : 'grid gap-8 p-6 lg:grid-cols-[1fr_300px]')}>
+      <div className={clsx(embedded ? 'flex flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5' : 'grid gap-6 p-4 sm:p-6 lg:grid-cols-[1fr_300px] lg:gap-8')}>
         {/* main column */}
         <div className={clsx(embedded ? 'contents' : 'min-w-0 space-y-7')}>
           {embedded ? (
@@ -103,12 +104,14 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
               <InlineText value={issue.summary} disabled={!canEdit} onSave={(v) => patch({ summary: v })} className="text-[22px] font-semibold leading-tight" label="Title" />
               {issue.flagged && <div className="flagged-card flex items-center gap-2 rounded-xl border border-warning/40 px-3 py-2 text-[13px] text-warning"><Flag size={14} /> Flagged as an impediment</div>}
               <Description compact value={issue.description || ''} disabled={!canEdit} onSave={(v) => patch({ description: v })} />
+              <Attachments issueKey={issueKey} items={issue.attachments || []} canEdit={canEdit} reload={reload} />
             </div>
           ) : (
             <>
               <InlineText value={issue.summary} disabled={!canEdit} onSave={(v) => patch({ summary: v })} className="text-[24px] font-semibold leading-snug" label="Title" />
               {issue.flagged && <div className="flagged-card flex items-center gap-2 rounded-xl border border-warning/40 px-3 py-2 text-[13px] text-warning"><Flag size={14} /> Flagged as an impediment</div>}
               <Description value={issue.description || ''} disabled={!canEdit} onSave={(v) => patch({ description: v })} />
+              <Attachments issueKey={issueKey} items={issue.attachments || []} canEdit={canEdit} reload={reload} />
             </>
           )}
 
@@ -140,7 +143,7 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
         {/* sidebar */}
         {embedded ? (
           <aside className="order-2 glass rounded-2xl p-4">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-x-4 gap-y-3 min-[440px]:grid-cols-2 md:grid-cols-3">
               <Prop label="Status" grid>{statusPicker}{issue.resolution && <div className="mt-1 text-xs text-muted">Resolution: {issue.resolution}</div>}</Prop>
               <Prop label="Assignee" grid>{assigneeField}</Prop>
               <Prop label="Reporter" grid>{reporterField}</Prop>
@@ -236,6 +239,27 @@ function Description({ value, onSave, disabled, compact }: { value: string; onSa
   );
 }
 
+function Attachments({ issueKey, items, canEdit, reload }: { issueKey: string; items: any[]; canEdit: boolean; reload: () => void }) {
+  const [adding, setAdding] = useState(false); const [del, setDel] = useState<any>(null);
+  async function attach(files: any[]) {
+    try {
+      await api(`/api/issues/${issueKey}/attachments`, { body: { attachments: files.map(({ name, url, publicId, resourceType, format, bytes, width, height }) => ({ name, url, publicId, resourceType, format, bytes, width, height })) } });
+      await reload(); invalidate('/api/issues'); toast.success(files.length === 1 ? 'File attached' : `${files.length} files attached`);
+    } catch (e) { toast.error(errMsg(e)); }
+  }
+  async function remove(a: any) { try { await api(`/api/issues/${issueKey}/attachments?id=${a.id}`, { method: 'DELETE' }); await reload(); toast.success('Attachment removed'); } catch (e) { toast.error(errMsg(e)); } }
+  if (!items.length && !canEdit) return null;
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-2"><h3 className="text-[13px] font-semibold uppercase tracking-wider text-muted">Attachments{items.length > 0 && <span className="ml-1.5 normal-case text-faint">({items.length})</span>}</h3>
+        {canEdit && <button type="button" className="btn btn-sm ml-auto" onClick={() => setAdding((v) => !v)}>{adding ? 'Close' : <><Plus size={13} /> Add</>}</button>}</div>
+      {adding && canEdit && <div className="mb-3"><AttachmentPicker compact files={[]} max={Math.max(0, 20 - items.length)} onUploaded={attach} /></div>}
+      {items.length > 0 ? <AttachmentGallery items={items} canDelete={canEdit} onDelete={setDel} /> : !adding && <p className="rounded-xl border border-dashed border-[var(--border-strong)] px-4 py-4 text-[13px] text-muted">No attachments yet. Add photos, videos or documents.</p>}
+      <ConfirmDialog open={!!del} onClose={() => setDel(null)} danger title="Remove attachment" confirmLabel="Remove" message={<>Remove <b>{del?.name}</b> from this issue? The file is deleted.</>} onConfirm={async () => { await remove(del); setDel(null); }} />
+    </div>
+  );
+}
+
 function Labels({ value, onSave, disabled }: { value: string[]; onSave: (v: string[]) => void; disabled?: boolean }) {
   const [v, setV] = useState('');
   return (
@@ -306,7 +330,7 @@ function History({ data }: { data: any }) {
       {data.activity.map((a: any) => (
         <div key={a._id} className="relative">
           <span className="absolute -left-6 top-1"><Avatar user={a.actor} size={22} /></span>
-          <div className="text-[13.5px]"><b>{a.actor?.name || 'System'}</b> <span className="text-muted">{a.action === 'created' ? 'created this issue' : a.action === 'commented' ? 'added a comment' : a.action === 'worklog' ? 'logged work' : a.action === 'automation' ? <>ran automation <i>{a.diff?.rule}</i></> : 'updated'}</span> <span className="text-xs text-faint">· {relTime(a.createdAt)}</span></div>
+          <div className="text-[13.5px]"><b>{a.actor?.name || 'System'}</b> <span className="text-muted">{a.action === 'created' ? 'created this issue' : a.action === 'commented' ? 'added a comment' : a.action === 'worklog' ? 'logged work' : a.action === 'attached' ? <>attached {(a.diff?.files || []).join(', ')}</> : a.action === 'detached' ? <>removed attachment <i>{a.diff?.file}</i></> : a.action === 'automation' ? <>ran automation <i>{a.diff?.rule}</i></> : 'updated'}</span> <span className="text-xs text-faint">· {relTime(a.createdAt)}</span></div>
           {a.action === 'updated' && a.diff && Object.entries(a.diff).map(([f, d]: any) => <div key={f} className="mt-1 flex flex-wrap items-center gap-2 text-[12.5px]"><span className="chip">{f.replace('Id', '')}</span><span className="text-muted line-through">{nameOf(f, d.from)}</span><span className="text-faint">→</span><span className="font-medium">{nameOf(f, d.to)}</span></div>)}
         </div>
       ))}

@@ -58,7 +58,7 @@ export function IssueTable({ items, onOpen, statuses, users, onChanged, canBulk,
       </div>
       <AnimatePresence>
         {sel.size > 0 && (
-          <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }} transition={{ type: 'spring', stiffness: 400, damping: 32 }} className="glass-solid fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 flex-wrap items-center gap-3 rounded-2xl px-4 py-3 shadow-[var(--glow)]">
+          <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }} transition={{ type: 'spring', stiffness: 400, damping: 32 }} className="glass-solid fixed bottom-4 left-1/2 z-50 flex w-max max-w-[calc(100vw-1.5rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-3 rounded-2xl px-4 py-3 sm:bottom-6 shadow-[var(--glow)]">
             <span className="text-[13.5px] font-semibold">{sel.size} selected</span>
             {statuses && <Select aria-label="Bulk status" className="!h-9 !w-40" value="" onChange={(v) => v && bulk({ status: v })} options={[{ value: '', label: 'Set status…' }, ...statuses.map((s) => ({ value: s.id, label: s.name }))]} disabled={busy} />}
             {users && <Select aria-label="Bulk assignee" className="!h-9 !w-40" value="" onChange={(v) => v && bulk({ assigneeId: v === '__none' ? null : v })} options={[{ value: '', label: 'Assign to…' }, { value: '__none', label: 'Unassigned' }, ...users.map((u) => ({ value: u._id, label: u.name }))]} disabled={busy} />}

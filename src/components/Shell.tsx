@@ -121,18 +121,16 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
         </AnimatePresence>
 
         <div className={clsx(ready && 'transition-[padding] duration-300', collapsed ? 'lg:pl-[108px]' : 'lg:pl-[272px]')}>
-          <header className="sticky top-0 z-30 px-4 pt-3 lg:pr-5">
-            <div className="glass flex h-[58px] items-center gap-3 rounded-[20px] px-3">
-              <button className="btn btn-ghost btn-icon shrink-0" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={`${collapsed ? 'Expand' : 'Collapse'} sidebar ([)`}
-                onClick={() => { if (window.matchMedia('(min-width: 1024px)').matches) toggleCollapse(); else setMobile(true); }}>
-                <span className="flex lg:hidden"><Menu size={19} /></span>
-                <span className="hidden lg:flex">{collapsed ? <ChevronsRight size={19} /> : <ChevronsLeft size={19} />}</span>
+          <header className="sticky top-0 z-30 px-3 pt-3 sm:px-4 lg:pr-5">
+            <div className="glass flex h-[58px] items-center gap-2 rounded-[20px] px-2 sm:gap-3 sm:px-3">
+              <button className="btn btn-ghost btn-icon shrink-0 lg:hidden" aria-label="Open menu" title="Open menu" onClick={() => setMobile(true)}>
+                <Menu size={19} />
               </button>
-              <button onClick={() => setPalette(true)} className="flex h-10 flex-1 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 text-left text-faint transition-colors hover:border-[var(--border-strong)] sm:max-w-[520px]" aria-label="Search">
+              <button onClick={() => setPalette(true)} className="flex h-10 min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 text-left text-faint transition-colors hover:border-[var(--border-strong)] sm:max-w-[520px]" aria-label="Search">
                 <Search size={16} /><span className="flex-1 truncate text-[13.5px]">Search issues, projects, people…</span><kbd className="hidden sm:inline"><Command size={10} className="inline" /> K</kbd>
               </button>
               {me.platformRole === 'super_admin' && !me.impersonatedBy && <OrgSwitcher me={me} path={path} />}
-              <div className="ml-auto flex items-center gap-1.5">
+              <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1.5">
                 <button className="btn btn-ghost btn-icon hidden sm:inline-flex" aria-label="Keyboard shortcuts" onClick={() => setHelp(true)}><HelpCircle size={18} /></button>
                 <button className="btn btn-ghost btn-icon" aria-label="Toggle theme" onClick={toggleTheme}><AnimatePresence mode="wait" initial={false}><motion.span key={theme} initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.18 }}>{theme === 'dark' ? <Sun size={18} /> : theme === 'light' ? <Contrast size={18} /> : <Moon size={18} />}</motion.span></AnimatePresence></button>
                 <Bell2 />
@@ -151,7 +149,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
               </div>
             </div>
           </header>
-          <main className="px-4 pb-16 pt-6 lg:pr-5" id="main">
+          <main className="px-3 pb-16 pt-5 sm:px-4 sm:pt-6 lg:pr-5" id="main">
             <motion.div key={path.split('/').slice(0, 3).join('/')} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.16, ease: 'easeOut' }}>{children}</motion.div>
           </main>
         </div>

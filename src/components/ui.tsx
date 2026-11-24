@@ -13,7 +13,7 @@ export function Spinner({ size = 16 }: { size?: number }) {
   return <span style={{ width: size, height: size, animation: 'spin .7s linear infinite' }} className="inline-block rounded-full border-2 border-current border-t-transparent" aria-label="Loading" />;
 }
 
-export function Avatar({ user, size = 28, ring }: { user?: { name?: string; color?: string } | null; size?: number; ring?: boolean }) {
+export function Avatar({ user, size = 28, ring }: { user?: { name?: string; color?: string; avatarUrl?: string } | null; size?: number; ring?: boolean }) {
   if (!user) return (
     <span title="Unassigned" style={{ width: size, height: size }} className="inline-flex shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--border-strong)] text-faint">
       <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>
@@ -21,6 +21,10 @@ export function Avatar({ user, size = 28, ring }: { user?: { name?: string; colo
   );
   const initials = (user.name || '?').split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase();
   const c = user.color || '#7c5cff';
+  if (user.avatarUrl) return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={user.avatarUrl} alt={user.name || 'User'} title={user.name} width={size} height={size} loading="lazy" decoding="async" style={{ width: size, height: size, boxShadow: ring ? '0 0 0 2px var(--bg)' : undefined }} className="inline-block shrink-0 select-none rounded-full bg-[var(--surface-2)] object-cover" />
+  );
   return (
     <span title={user.name} style={{ width: size, height: size, fontSize: size * 0.38, background: `linear-gradient(135deg, ${c}, ${c}99)`, boxShadow: ring ? '0 0 0 2px var(--bg)' : undefined }} className="inline-flex shrink-0 select-none items-center justify-center rounded-full font-semibold text-white">
       {initials}
@@ -28,7 +32,7 @@ export function Avatar({ user, size = 28, ring }: { user?: { name?: string; colo
   );
 }
 
-export function AvatarStack({ users, max = 4, size = 26 }: { users: ({ name?: string; color?: string } | undefined)[]; max?: number; size?: number }) {
+export function AvatarStack({ users, max = 4, size = 26 }: { users: ({ name?: string; color?: string; avatarUrl?: string } | undefined)[]; max?: number; size?: number }) {
   const shown = users.filter(Boolean).slice(0, max);
   const extra = users.filter(Boolean).length - shown.length;
   return (
@@ -79,9 +83,9 @@ export function relTime(d: string | Date) {
 export function PageHeader({ title, subtitle, actions, icon }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; icon?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div className="flex items-center gap-3.5">
+      <div className="flex min-w-0 items-center gap-3.5">
         {icon}
-        <div><h1 className="text-[26px] font-semibold leading-tight">{title}</h1>{subtitle && <p className="mt-0.5 text-[14px] text-muted">{subtitle}</p>}</div>
+        <div className="min-w-0"><h1 className="text-[22px] font-semibold leading-tight sm:text-[26px]">{title}</h1>{subtitle && <p className="mt-0.5 text-[14px] text-muted">{subtitle}</p>}</div>
       </div>
       <div className="flex flex-wrap items-center gap-2">{actions}</div>
     </div>
@@ -148,7 +152,7 @@ export function CountUp({ value, duration = 1, decimals = 0 }: { value: number; 
 /* ───────────── Tabs with sliding indicator ───────────── */
 export function Tabs<T extends string>({ tabs, value, onChange, id }: { tabs: { id: T; label: ReactNode; count?: number }[]; value: T; onChange: (v: T) => void; id: string }) {
   return (
-    <div role="tablist" className="glass inline-flex flex-wrap gap-1 rounded-2xl p-1">
+    <div role="tablist" className="glass inline-flex max-w-full flex-wrap gap-1 rounded-2xl p-1">
       {tabs.map((t) => (
         <button key={t.id} role="tab" aria-selected={value === t.id} onClick={() => onChange(t.id)} className={clsx('relative rounded-xl px-3.5 py-1.5 text-[13.5px] font-medium transition-colors', value === t.id ? 'text-text' : 'text-muted hover:text-text')}>
           {value === t.id && <motion.span layoutId={`tab-${id}`} className="absolute inset-0 rounded-xl bg-[var(--surface-2)] shadow-[0_0_0_1px_var(--border-strong),0_4px_16px_-6px_rgba(124,92,255,.5)]" transition={{ type: 'spring', stiffness: 500, damping: 36 }} />}
@@ -172,16 +176,16 @@ function useEscape(open: boolean, onClose: () => void) {
 
 export function Modal({ open, onClose, title, children, width = 560, footer, padded = true, scroll = false, centered = false }: { open: boolean; onClose: () => void; title?: ReactNode; children: ReactNode; width?: number; footer?: ReactNode; padded?: boolean; scroll?: boolean; centered?: boolean }) {
   useEscape(open, onClose);
-  const body = padded ? <div className={clsx('p-6', scroll && 'min-h-0 flex-1 overflow-y-auto')}>{children}</div> : scroll ? <div className="min-h-0 flex-1 overflow-y-auto">{children}</div> : children;
+  const body = padded ? <div className={clsx('p-4 sm:p-6', scroll && 'min-h-0 flex-1 overflow-y-auto')}>{children}</div> : scroll ? <div className="min-h-0 flex-1 overflow-y-auto">{children}</div> : children;
   return (
     <AnimatePresence>
       {open && (
-        <div className={clsx('fixed inset-0 z-[80] flex justify-center overflow-y-auto p-4', centered ? 'items-center' : 'items-start pt-[8vh]')}>
+        <div className={clsx('fixed inset-0 z-[80] flex justify-center overflow-y-auto p-3 sm:p-4', centered ? 'items-center' : 'items-start pt-[8vh]')}>
           <motion.div className="fixed inset-0 bg-black/55" initial={{ opacity: 0, backdropFilter: 'blur(0px)' }} animate={{ opacity: 1, backdropFilter: 'blur(8px)' }} exit={{ opacity: 0, backdropFilter: 'blur(0px)' }} onClick={onClose} />
           <motion.div role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : 'Dialog'} style={{ maxWidth: width }} className={clsx('glass-solid relative w-full rounded-3xl', scroll && 'flex flex-col overflow-hidden', scroll && (centered ? 'max-h-[min(920px,90vh)]' : 'max-h-[min(860px,84vh)]'))} initial={{ opacity: 0, y: 24, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: 0.97 }} transition={{ type: 'spring', stiffness: 380, damping: 32 }}>
-            {title && <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4"><h2 className="text-[17px] font-semibold">{title}</h2><button aria-label="Close" onClick={onClose} className="btn btn-ghost btn-icon btn-sm"><X size={16} /></button></div>}
+            {title && <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3.5 sm:px-6 sm:py-4"><h2 className="min-w-0 text-[17px] font-semibold">{title}</h2><button aria-label="Close" onClick={onClose} className="btn btn-ghost btn-icon btn-sm"><X size={16} /></button></div>}
             {body}
-            {footer && <div className="flex justify-end gap-2 border-t border-[var(--border)] px-6 py-4">{footer}</div>}
+            {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--border)] px-4 py-3.5 sm:px-6 sm:py-4">{footer}</div>}
           </motion.div>
         </div>
       )}
@@ -233,7 +237,7 @@ export function Dropdown({ trigger, children, align = 'right' }: { trigger: (p: 
     <div ref={ref} className="relative">
       {trigger({ open, toggle: () => setOpen((o) => !o) })}
       <AnimatePresence>
-        {open && <motion.div initial={{ opacity: 0, y: -6, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.98 }} transition={{ duration: 0.14 }} className={clsx('glass-solid absolute z-50 mt-2 min-w-[200px] overflow-hidden rounded-2xl p-1.5', align === 'right' ? 'right-0' : 'left-0')}>{children(() => setOpen(false))}</motion.div>}
+        {open && <motion.div initial={{ opacity: 0, y: -6, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.98 }} transition={{ duration: 0.14 }} className={clsx('glass-solid absolute z-50 mt-2 min-w-[200px] max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl p-1.5', align === 'right' ? 'right-0' : 'left-0')}>{children(() => setOpen(false))}</motion.div>}
       </AnimatePresence>
     </div>
   );
@@ -256,7 +260,8 @@ export function Select({ value, onChange, options, className, disabled, placehol
     const place = () => {
       const r = trig.current?.getBoundingClientRect(); if (!r) return;
       const below = window.innerHeight - r.bottom, above = r.top; const up = below < 260 && above > below;
-      setPos({ left: r.left, width: Math.max(r.width, 160), maxH: Math.min(288, (up ? above : below) - 16), top: up ? undefined : r.bottom + 6, bottom: up ? window.innerHeight - r.top + 6 : undefined });
+      const w = Math.min(Math.max(r.width, 160), window.innerWidth - 16);
+      setPos({ left: Math.max(8, Math.min(r.left, window.innerWidth - w - 8)), width: w, maxH: Math.min(288, (up ? above : below) - 16), top: up ? undefined : r.bottom + 6, bottom: up ? window.innerHeight - r.top + 6 : undefined });
     };
     const onScroll = (e: Event) => { if (!(e.target as HTMLElement)?.closest?.('[data-listbox]')) place(); };
     const close = (e: Event) => { if (!(e.target as HTMLElement)?.closest?.('[data-listbox]') && !trig.current?.contains(e.target as Node)) setOpen(false); };

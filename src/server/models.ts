@@ -12,7 +12,7 @@ export const User = model<any>('User', S({
   name: String, email: { type: String, unique: true, lowercase: true, index: true },
   passwordHash: String, orgId: { type: oid, index: true }, role: { type: String, default: 'member' }, // org_admin|member|guest
   platformRole: { type: String, default: 'user' }, status: { type: String, default: 'active' },
-  title: String, color: String, theme: { type: String, default: 'simple' },
+  title: String, color: String, avatarUrl: String, theme: { type: String, default: 'simple' },
   failed: { type: Number, default: 0 }, lockUntil: Date, lastLoginAt: Date, tokenVersion: { type: Number, default: 0 },
   teamIds: [oid], capacityHours: { type: Number, default: 30 },
   otpHash: String, otpExpires: Date, otpTries: { type: Number, default: 0 },
@@ -47,6 +47,7 @@ const issueSchema = S({
   reporterId: oid, assigneeId: { type: oid, index: true }, labels: [String], components: [String], fixVersion: String,
   epicId: oid, parentId: oid, sprintId: { type: oid, index: true }, points: Number,
   estimate: Number, timeSpent: { type: Number, default: 0 }, dueDate: Date, startDate: Date, rank: { type: Number, index: true },
+  attachments: [{ id: String, name: String, url: String, publicId: String, resourceType: String, kind: String, format: String, bytes: Number, width: Number, height: Number, uploadedBy: String, createdAt: String, _id: false }],
   flagged: Boolean, watchers: [oid], votes: [oid], links: [{ type: { type: String }, targetKey: String, _id: false }],
   resolvedAt: Date, version: { type: Number, default: 1 }, deletedAt: Date, slaDue: Date, statusChangedAt: Date,
 }, opts);

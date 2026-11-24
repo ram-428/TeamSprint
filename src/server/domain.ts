@@ -120,7 +120,7 @@ export async function createIssue(user: AuthUser, project: any, data: Record<str
     orgId: project.orgId, projectId: project._id, projectKey: project.key, number, key: `${project.key}-${number}`,
     type: data.type || 'task', summary: data.summary, description: data.description, status: first.id, statusCategory: first.category,
     priority: data.priority || 'Medium', reporterId: user.id, assigneeId: data.assigneeId || (project.type === 'service_desk' ? undefined : undefined),
-    labels: data.labels || [], components: data.components || [], fixVersion: data.fixVersion, epicId: data.epicId, parentId: data.parentId,
+    attachments: data.attachments || [], labels: data.labels || [], components: data.components || [], fixVersion: data.fixVersion, epicId: data.epicId, parentId: data.parentId,
     sprintId: data.sprintId, points: data.points, estimate: data.estimate, dueDate: data.dueDate, startDate: data.startDate,
     rank: (last?.rank ?? 0) + 1000, watchers: [user.id], statusChangedAt: new Date(),
     ...(first.category === 'done' ? { resolvedAt: new Date(), resolution: first.id === 'cancelled' ? "Won't Do" : 'Done' } : {}),

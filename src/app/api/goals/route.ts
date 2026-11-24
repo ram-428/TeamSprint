@@ -4,7 +4,7 @@ import { Goal, User } from '@/server/models';
 
 export const GET = route(async (_req, { user }) => {
   const goals = await Goal.find({ orgId: user.orgId }).sort({ createdAt: -1 }).lean<any[]>();
-  const owners = await User.find({ _id: { $in: goals.map((g) => g.ownerId) } }).select('name color').lean<any[]>();
+  const owners = await User.find({ _id: { $in: goals.map((g) => g.ownerId) } }).select('name color avatarUrl').lean<any[]>();
   return goals.map((g) => {
     const pct = g.keyResults.length ? Math.round(g.keyResults.reduce((a: number, k: any) => a + Math.min(1, (k.current || 0) / (k.target || 1)), 0) / g.keyResults.length * 100) : 0;
     return { ...g, progress: pct, owner: owners.find((o) => String(o._id) === String(g.ownerId)) };
