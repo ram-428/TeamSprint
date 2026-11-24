@@ -3,7 +3,7 @@ import { randomInt } from 'node:crypto';
 import { route, AppError } from '@/server/api';
 import { User } from '@/server/models';
 import { hash, signSession } from '@/server/auth';
-import { sendResetCode, smtpConfigured } from '@/server/mail';
+import { sendResetCode, smtpConfigured, siteUrl } from '@/server/mail';
 import { maskEmail } from '@/server/otp';
 
 const schema = z.object({ email: z.string().trim().email('Enter a valid email') });
@@ -32,7 +32,7 @@ export const POST = route(async (req) => {
     u.otpHash = await hash(code); u.otpExpires = new Date(Date.now() + TTL); u.otpTries = 0; await u.save();
     if (dev) console.log(`[dev] password reset code for ${u.email}: ${code}`);
     if (smtpConfigured()) {
-      try { await sendResetCode(u.email, u.name || 'there', code); }
+      try { await sendResetCode(u.email, u.name || 'there', code, siteUrl(req)); }
       catch (e) { console.error('[mail] reset code failed', e); throw new AppError(502, 'MAIL_FAILED', 'Could not send the email. Try again shortly.'); }
     }
   }
