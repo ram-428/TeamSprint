@@ -69,7 +69,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   }, [me.role, router]);
 
   const nav: NavItem[] = [
-    { href: '/dashboard', label: 'For you', icon: LayoutDashboard },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/projects', label: 'Projects', icon: FolderKanban, match: '/projects' },
     { href: '/search', label: 'Filters', icon: Filter },
     ...(me.role !== 'guest' ? [{ href: '/goals', label: 'Goals', icon: Target }, { href: '/workload', label: 'Workload', icon: Gauge }] : []),
