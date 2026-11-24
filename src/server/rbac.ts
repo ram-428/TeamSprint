@@ -5,6 +5,7 @@ export const PERMS = {
     'issue.create', 'issue.edit_any', 'issue.delete_any', 'issue.assign', 'issue.transition', 'comment.add', 'comment.delete_any',
     'worklog.add', 'sprint.manage', 'board.manage'],
   developer: ['project.view', 'issue.create', 'issue.edit_any', 'issue.assign', 'issue.transition', 'comment.add', 'worklog.add', 'sprint.manage', 'board.manage'],
+  tester: ['project.view', 'issue.create', 'issue.edit_any', 'issue.assign', 'issue.transition', 'comment.add', 'worklog.add'],
   reporter: ['project.view', 'issue.create', 'issue.edit_own', 'issue.transition_own', 'comment.add'],
   viewer: ['project.view'],
 } as const satisfies Record<string, readonly string[]>;

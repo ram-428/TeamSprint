@@ -31,7 +31,7 @@ const projectSchema = S({
   type: { type: String, default: 'scrum' }, // scrum|kanban|business|service_desk
   leadId: oid, color: String, icon: String, visibility: { type: String, default: 'org' }, // private|org
   issueCounter: { type: Number, default: 0 }, archived: { type: Boolean, default: false },
-  members: [{ userId: oid, role: String, _id: false }], // project_admin|developer|reporter|viewer
+  members: [{ userId: oid, role: String, _id: false }], // project_admin|developer|tester|reporter|viewer
   statuses: [StatusSub], wip: { type: Map, of: Number, default: {} },
   components: [String], versions: [{ id: String, name: String, releaseDate: Date, released: Boolean, _id: false }],
   starredBy: [oid],

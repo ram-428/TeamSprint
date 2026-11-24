@@ -55,7 +55,7 @@ export function CreateIssueModal({ open, onClose, projectKey, defaults, onCreate
           {!projectKey && <Field label="Project"><Select value={pk} onChange={setPk} options={creatable.length ? creatable.map((p) => ({ value: p.key, label: `${p.name} (${p.key})` })) : [{ value: '', label: 'Loading…' }]} aria-label="Project" /></Field>}
           <Field label="Issue type"><Select value={f.type} onChange={(v) => setF({ ...f, type: v })} options={TYPES.map((t) => ({ value: t, label: t[0].toUpperCase() + t.slice(1) }))} aria-label="Issue type" /></Field>
         </div>
-        <Field label="Summary" error={errs.summary} hint="Quick capture: !high  @sara  #label  ^5 (points)  /bug">
+        <Field label="Title" error={errs.summary} hint="Quick capture: !high  @sara  #label  ^5 (points)  /bug">
           <input className={`input ${errs.summary ? 'err' : ''}`} value={f.summary} onChange={(e) => setF({ ...f, summary: e.target.value })} placeholder="What needs to be done?" autoFocus aria-label="Summary" />
         </Field>
         {/@|!|#|\^/.test(f.summary) && <div className="-mt-2 flex items-center gap-1.5 text-xs text-accent2"><Sparkles size={12} /> Quick capture will parse: {JSON.stringify(parseCapture(f.summary)).replace(/[{}"]/g, ' ').slice(0, 120)}</div>}

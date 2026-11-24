@@ -7,7 +7,7 @@ import { Avatar, Card, ConfirmDialog, Field, Select, Spinner, Tabs } from '@/com
 import { useProject } from '@/components/ProjectContext';
 import { useMe } from '@/components/UserContext';
 
-const ROLES = [{ value: 'project_admin', label: 'Project Admin' }, { value: 'developer', label: 'Developer' }, { value: 'reporter', label: 'Reporter' }, { value: 'viewer', label: 'Viewer' }];
+const ROLES = [{ value: 'project_admin', label: 'Project Admin' }, { value: 'developer', label: 'Developer' }, { value: 'tester', label: 'Tester' }, { value: 'reporter', label: 'Reporter' }, { value: 'viewer', label: 'Viewer' }];
 
 export default function ProjectSettings({ params }: { params: Promise<{ key: string }> }) {
   const { key } = use(params); const { project, reload } = useProject(); const ab = project.abilities; const me = useMe(); const router = useRouter();

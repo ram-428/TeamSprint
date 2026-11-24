@@ -37,7 +37,7 @@ export function IssueTable({ items, onOpen, statuses, users, onChanged, canBulk,
         <table className="w-full min-w-[820px] text-[13.5px]">
           <thead className="border-b border-[var(--border)]"><tr>
             {canBulk && <th className="w-10 p-3"><input type="checkbox" aria-label="Select all" checked={all} onChange={() => setSel(all ? new Set() : new Set(pg.rows.map((r) => r.key)))} className="accent-[var(--accent)]" /></th>}
-            {th('key', 'Key')}{th('summary', 'Summary')}{th('status', 'Status')}{th('priority', 'Priority')}{th('assignee', 'Assignee')}{th('dueDate', 'Due')}{th('updatedAt', 'Updated')}
+            {th('key', 'Key')}{th('summary', 'Title')}{th('status', 'Status')}{th('priority', 'Priority')}{th('assignee', 'Assignee')}{th('dueDate', 'Due')}{th('updatedAt', 'Updated')}
           </tr></thead>
           <tbody>
             {pg.rows.map((i, idx) => (

@@ -62,7 +62,7 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
       <div className={clsx('grid gap-8 p-6', embedded ? 'xl:grid-cols-[1fr_260px]' : 'lg:grid-cols-[1fr_300px]')}>
         {/* main column */}
         <div className="min-w-0 space-y-7">
-          <InlineText value={issue.summary} disabled={!canEdit} onSave={(v) => patch({ summary: v })} className="text-[24px] font-semibold leading-snug" label="Summary" />
+          <InlineText value={issue.summary} disabled={!canEdit} onSave={(v) => patch({ summary: v })} className="text-[24px] font-semibold leading-snug" label="Title" />
           {issue.flagged && <div className="flagged-card flex items-center gap-2 rounded-xl border border-warning/40 px-3 py-2 text-[13px] text-warning"><Flag size={14} /> Flagged as an impediment</div>}
           <Description value={issue.description || ''} disabled={!canEdit} onSave={(v) => patch({ description: v })} />
 
