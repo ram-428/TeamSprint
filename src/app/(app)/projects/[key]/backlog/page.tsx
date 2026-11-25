@@ -114,6 +114,8 @@ export default function BacklogPage({ params }: { params: Promise<{ key: string 
     try { for (const k of picks) await api('/api/issues/rank', { body: { key: k, sprintId: sprint._id } }); mutate(); reloadSprints(); toast.success(`Added ${picks.length} issues to fill ~${avgVelocity} pts capacity`); } catch (e) { toast.error(errMsg(e)); }
   }
   const activeIssue = active ? byKey.get(active) : null;
+  const hasFilters = !!q || !!epicF || assignees.length > 0;
+  const visibleKeys = (ks: string[] = []) => ks.filter((k) => { const i = byKey.get(k); return !!i && match(i); });
   const backlogKeys = visibleKeys(secs.backlog);
   const noMatches = 'No issues match the current filters';
 

@@ -8,7 +8,6 @@ import { useApi, ErrorLike } from '@/lib/projectApi';
 import { api } from '@/lib/api';
 import { Skeleton, ErrorState, Avatar } from '@/components/ui';
 import { ProjectMembersModal } from '@/components/ProjectMembersModal';
-import { ProjectAssigneeFilter, type ProjectMember } from '@/components/ProjectAssigneeFilter';
 import { ProjectProvider } from '@/components/ProjectContext';
 
 export default function ProjectLayout({ children, params }: { children: React.ReactNode; params: Promise<{ key: string }> }) {
@@ -23,13 +22,6 @@ export default function ProjectLayout({ children, params }: { children: React.Re
   if (error) return <ErrorState message={error.status === 404 ? 'Project not found, or you do not have access.' : (error as ErrorLike).message} onRetry={reload} />;
   if (!project) return <div className="mx-auto max-w-[1500px] space-y-4"><Skeleton className="h-12 w-1/3" /><Skeleton className="h-10 w-2/3" /><Skeleton className="h-[480px]" /></div>;
   const ab = project.abilities;
-  const hasAssigneeFilter = activeTab === 'board' || activeTab === 'backlog';
-  const members = (project.members as ProjectMember[]).filter((member) => member._id);
-  const assigneeIds = selectedAssignees.filter((id) => members.some((member) => member._id === id));
-
-  function toggleAssignee(id: string) {
-    setSelectedAssignees((ids) => ids.includes(id) ? ids.filter((selectedId) => selectedId !== id) : [...ids, id]);
-  }
   const tabs = [
     { slug: 'board', label: project.type === 'scrum' ? 'Active sprint' : 'Board', icon: KanbanSquare },
     ...(project.type === 'scrum' ? [{ slug: 'backlog', label: 'Backlog', icon: ListTodo }] : []),
