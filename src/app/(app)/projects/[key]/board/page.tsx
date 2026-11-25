@@ -79,6 +79,7 @@ export default function BoardPage({ params }: { params: Promise<{ key: string }>
       </div>
 
       {loading ? <div className="flex gap-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[420px] w-[min(300px,calc(100vw-4rem))] shrink-0" />)}</div>
+        : visible.length === 0 && view === 'board' && (assignees.length > 0 || q || mine) && (project.type !== 'scrum' || active) ? <Card><EmptyState title="No issues match the current filters" /></Card>
         : visible.length === 0 && (project.type !== 'scrum' || active) && !q && !mine && !assignees.length ? <Card><EmptyState title="Nothing on the board yet" text="Create your first issue to get things moving." action={ab['issue.create'] && <button className="btn btn-primary" onClick={() => setCreate({ open: true })}><Plus size={15} />Create issue</button>} /></Card>
         : project.type === 'scrum' && !active ? null
         : view === 'list' ? (

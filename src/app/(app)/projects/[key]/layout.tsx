@@ -6,8 +6,9 @@ import { KanbanSquare, ListTodo, Table2, GanttChartSquare, BarChart3, Settings2,
 import clsx from 'clsx';
 import { useApi, ErrorLike } from '@/lib/projectApi';
 import { api } from '@/lib/api';
-import { Skeleton, ErrorState, Avatar } from '@/components/ui';
+import { Skeleton, ErrorState, AvatarStack } from '@/components/ui';
 import { ProjectMembersModal } from '@/components/ProjectMembersModal';
+import { ProjectAssigneeFilter, type ProjectMember } from '@/components/ProjectAssigneeFilter';
 import { ProjectProvider } from '@/components/ProjectContext';
 
 export default function ProjectLayout({ children, params }: { children: React.ReactNode; params: Promise<{ key: string }> }) {
@@ -22,6 +23,8 @@ export default function ProjectLayout({ children, params }: { children: React.Re
   if (error) return <ErrorState message={error.status === 404 ? 'Project not found, or you do not have access.' : (error as ErrorLike).message} onRetry={reload} />;
   if (!project) return <div className="mx-auto max-w-[1500px] space-y-4"><Skeleton className="h-12 w-1/3" /><Skeleton className="h-10 w-2/3" /><Skeleton className="h-[480px]" /></div>;
   const ab = project.abilities;
+  const hasAssigneeFilter = activeTab === 'board' || activeTab === 'backlog' || activeTab === 'list';
+  const members = (project.members as ProjectMember[]).filter((m) => m._id);
   const tabs = [
     { slug: 'board', label: project.type === 'scrum' ? 'Active sprint' : 'Board', icon: KanbanSquare },
     ...(project.type === 'scrum' ? [{ slug: 'backlog', label: 'Backlog', icon: ListTodo }] : []),
@@ -49,20 +52,9 @@ export default function ProjectLayout({ children, params }: { children: React.Re
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="hidden items-center gap-x-2 text-[12.5px] text-muted md:flex"><span className="key font-semibold">{project.key}</span><span>·</span><span className="capitalize">{project.type.replace('_', ' ')}</span><span>·</span><button className="inline-flex items-center gap-1 hover:text-text hover:underline" onClick={() => setMembersOpen(true)}><Layers size={12} />{project.members.length} {project.members.length === 1 ? 'member' : 'members'}</button>{ab.role === 'viewer' && <span className="chip !h-5 !text-[10px]">read-only</span>}</span>
-            <div className="flex items-center" role="group" aria-label="Filter issues by member">
-              {project.members.slice(0, 6).map((m: any, i: number) => {
-                const on = assignees.includes(m._id); const dim = assignees.length > 0 && !on;
-                return (
-                  <button key={m._id} type="button" aria-pressed={on} aria-label={`${on ? 'Remove filter' : 'Show only issues of'} ${m.name}`} title={`${m.name}${on ? ' (filtered)' : ''}`}
-                    onClick={() => toggleAssignee(m._id)} style={{ marginLeft: i ? -8 : 0 }}
-                    className={clsx('relative rounded-full transition hover:z-10 hover:-translate-y-0.5', on ? 'z-[5] ring-2 ring-[var(--accent)]' : dim ? 'opacity-40 hover:opacity-100' : '')}>
-                    <Avatar user={m} size={28} ring />
-                  </button>
-                );
-              })}
-              {project.members.length > 6 && <button type="button" title="All members" aria-label="View project members" style={{ marginLeft: -8, width: 28, height: 28 }} className="inline-flex items-center justify-center rounded-full border border-[var(--border)] bg-surface-2 text-[10px] font-semibold text-muted" onClick={() => setMembersOpen(true)}>+{project.members.length - 6}</button>}
-              {assignees.length > 0 && <button type="button" className="ml-2 text-xs font-semibold text-accent2 hover:underline" onClick={clearAssignees}>Clear ({assignees.length})</button>}
-            </div>
+            {hasAssigneeFilter
+              ? <ProjectAssigneeFilter members={members} selectedIds={assignees} onToggle={toggleAssignee} onClear={clearAssignees} />
+              : <button aria-label="View project members" title="Project members" className="rounded-full" onClick={() => setMembersOpen(true)}><AvatarStack users={project.members} max={5} size={28} /></button>}
             {ab['project.manage_members']
               ? <button className="btn btn-sm" onClick={() => setMembersOpen(true)}><UserPlus size={15} /> Add member</button>
               : <button className="btn btn-sm" onClick={() => setMembersOpen(true)}><Users size={15} /> Members</button>}
