@@ -1,5 +1,5 @@
 'use client';
-import { use, useEffect, useMemo, useState } from 'react';
+import { use, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { CheckCircle2, Flag, KanbanSquare, List, Plus, Search, Target, Users } from 'lucide-react';
@@ -30,7 +30,7 @@ export default function BoardPage({ params }: { params: Promise<{ key: string }>
 
   const all = useMemo(() => data?.items ?? [], [data]);
   const epics = useMemo(() => Object.fromEntries(all.filter((i) => i.type === 'epic').map((i) => [i._id, i.summary])), [all]);
-  const visible = useMemo(() => {
+  const filtered = useMemo(() => {
     let l = all.filter((i) => i.type !== 'epic');
     if (project.type === 'scrum') l = active ? l.filter((i) => String(i.sprintId) === String(active._id)) : [];
     if (mine) l = l.filter((i) => i.assigneeId === me.id);
@@ -41,14 +41,8 @@ export default function BoardPage({ params }: { params: Promise<{ key: string }>
 
   const setSel = (k: string | null) => { const p = new URLSearchParams(sp.toString()); k ? p.set('selected', k) : p.delete('selected'); router.replace(`${path}?${p}`, { scroll: false }); };
   const onChanged = (fn: (l: any[]) => any[]) => mutate({ items: fn(all) });
-  const swimlanes = useMemo(() => {
-    if (!lanes) return [{ id: 'all', label: '', issues: visible }];
-    const map = new Map<string, any[]>();
-    for (const i of visible) { const k = i.assignee?._id || 'none'; map.set(k, [...(map.get(k) || []), i]); }
-    return [...map.entries()].map(([id, issues]) => ({ id, label: id === 'none' ? 'Unassigned' : issues[0].assignee.name, user: issues[0].assignee, issues }));
-  }, [visible, lanes]);
 
-  const total = visible.reduce((a, i) => a + (i.points || 0), 0), done = visible.filter((i) => i.statusCategory === 'done').reduce((a, i) => a + (i.points || 0), 0);
+  const total = filtered.reduce((a, i) => a + (i.points || 0), 0), done = filtered.filter((i) => i.statusCategory === 'done').reduce((a, i) => a + (i.points || 0), 0);
   const daysLeft = active ? Math.max(0, Math.ceil((+new Date(active.endDate) - Date.now()) / 864e5)) : 0;
 
   return (

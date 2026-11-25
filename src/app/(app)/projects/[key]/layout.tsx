@@ -1,17 +1,18 @@
 'use client';
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useSelectedLayoutSegment } from 'next/navigation';
 import { KanbanSquare, ListTodo, Table2, GanttChartSquare, BarChart3, Settings2, Zap, Layers, Star, Lock, UserPlus, Users } from 'lucide-react';
 import clsx from 'clsx';
 import { useApi, ErrorLike } from '@/lib/projectApi';
 import { api } from '@/lib/api';
 import { Skeleton, ErrorState, Avatar } from '@/components/ui';
 import { ProjectMembersModal } from '@/components/ProjectMembersModal';
+import { ProjectAssigneeFilter, type ProjectMember } from '@/components/ProjectAssigneeFilter';
 import { ProjectProvider } from '@/components/ProjectContext';
 
 export default function ProjectLayout({ children, params }: { children: React.ReactNode; params: Promise<{ key: string }> }) {
-  const { key } = use(params); const path = usePathname();
+  const { key } = use(params); const activeTab = useSelectedLayoutSegment();
   const { data: project, error, reload, mutate } = useApi<any>(`/api/projects/${key}`);
   const [membersOpen, setMembersOpen] = useState(false);
   // Member avatars in the header double as a multi-select assignee filter for the board, backlog and issue list.
@@ -22,6 +23,13 @@ export default function ProjectLayout({ children, params }: { children: React.Re
   if (error) return <ErrorState message={error.status === 404 ? 'Project not found, or you do not have access.' : (error as ErrorLike).message} onRetry={reload} />;
   if (!project) return <div className="mx-auto max-w-[1500px] space-y-4"><Skeleton className="h-12 w-1/3" /><Skeleton className="h-10 w-2/3" /><Skeleton className="h-[480px]" /></div>;
   const ab = project.abilities;
+  const hasAssigneeFilter = activeTab === 'board' || activeTab === 'backlog';
+  const members = (project.members as ProjectMember[]).filter((member) => member._id);
+  const assigneeIds = selectedAssignees.filter((id) => members.some((member) => member._id === id));
+
+  function toggleAssignee(id: string) {
+    setSelectedAssignees((ids) => ids.includes(id) ? ids.filter((selectedId) => selectedId !== id) : [...ids, id]);
+  }
   const tabs = [
     { slug: 'board', label: project.type === 'scrum' ? 'Active sprint' : 'Board', icon: KanbanSquare },
     ...(project.type === 'scrum' ? [{ slug: 'backlog', label: 'Backlog', icon: ListTodo }] : []),
@@ -70,10 +78,10 @@ export default function ProjectLayout({ children, params }: { children: React.Re
         </div>
         <ProjectMembersModal open={membersOpen} onClose={() => setMembersOpen(false)} project={project} reload={reload} />
         {/* underlined tabs */}
-        <nav className="mb-5 flex max-w-full gap-1 overflow-x-auto border-b-2 border-[var(--border)]" aria-label="Project">
+        <nav className="mb-5 flex max-w-full gap-1 overflow-x-auto border-b border-[var(--border)]" aria-label="Project">
           {tabs.map((t) => {
-            const active = path === `/projects/${key}/${t.slug}`;
-            return <Link key={t.slug} href={`/projects/${key}/${t.slug}`} aria-current={active ? 'page' : undefined} className={clsx('relative -mb-[2px] flex items-center gap-2 whitespace-nowrap border-b-2 px-2 pb-2 pt-1.5 text-[14px] font-medium transition-colors', active ? 'border-[var(--accent)] text-accent' : 'border-transparent text-muted hover:border-[var(--border-strong)] hover:text-text')}>
+            const active = activeTab === t.slug;
+            return <Link key={t.slug} href={`/projects/${key}/${t.slug}`} aria-current={active ? 'page' : undefined} className={clsx('flex shrink-0 items-center gap-2 whitespace-nowrap rounded-t-md border-b-2 px-2 pb-2 pt-1.5 text-[14px] transition-colors', active ? 'border-[var(--accent)] bg-[var(--accent-soft)] font-semibold text-[var(--accent)]' : 'border-transparent font-medium text-muted hover:border-[var(--border-strong)] hover:text-text')}>
               <t.icon size={16} /><span>{t.label}</span></Link>;
           })}
         </nav>
