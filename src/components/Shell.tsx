@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  LayoutDashboard, FolderKanban, Search, Bell, Plus, Sun, Moon, Contrast, LogOut, Settings, Target, Gauge, ShieldCheck, Building2,
+  LayoutDashboard, FolderKanban, Search, Bell, Plus, Sun, Moon, Contrast, LogOut, Settings, Target, Gauge, ShieldCheck, Building2, ListChecks,
   Command, Filter, Eye, X, UserCircle2, Menu, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import clsx from 'clsx';
@@ -26,7 +26,7 @@ function OrgSwitcher({ me, path }: { me: Me; path: string }) {
     try {
       await api('/api/admin/platform/context', { body: { orgId } });
       // hard navigation so every cached list/board from the previous organization is dropped
-      const keep = ['/dashboard', '/projects', '/goals', '/workload', '/search', '/notifications', '/admin/org', '/admin/platform', '/settings'];
+      const keep = ['/dashboard', '/projects', '/goals', '/workload', '/search', '/notifications', '/admin/org', '/admin/masters', '/admin/platform', '/settings'];
       window.location.href = keep.includes(path) ? path : '/dashboard';
     } catch (e) { toast.error(errMsg(e)); setBusy(false); }
   }
@@ -77,7 +77,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   ];
   const admin: NavItem[] = [
     ...(me.platformRole === 'super_admin' ? [{ href: '/admin/platform', label: 'Platform', icon: ShieldCheck }] : []),
-    ...(me.role === 'org_admin' || me.platformRole === 'super_admin' ? [{ href: '/admin/org', label: 'Organization', icon: Building2 }] : []),
+    ...(me.role === 'org_admin' || me.platformRole === 'super_admin' ? [{ href: '/admin/org', label: 'Organization', icon: Building2 }, { href: '/admin/masters', label: 'Masters', icon: ListChecks }] : []),
   ];
 
   const exitImpersonation = async () => { try { await api('/api/admin/platform/impersonate', { method: 'DELETE' }); window.location.href = '/admin/platform'; } catch (e) { toast.error(errMsg(e)); } };

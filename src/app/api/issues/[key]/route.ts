@@ -35,7 +35,7 @@ export const GET = route(async (_req, { user, params }) => {
 const patchSchema = z.object({
   summary: z.string().trim().min(3).max(200).optional(), description: z.string().max(20000).optional(),
   status: z.string().optional(), resolution: z.string().optional(), priority: z.enum(['Highest', 'High', 'Medium', 'Low', 'Lowest']).optional(),
-  type: z.enum(['epic', 'story', 'task', 'bug', 'subtask']).optional(), assigneeId: z.string().nullable().optional(),
+  type: z.string().trim().min(1).max(40).optional(), assigneeId: z.string().nullable().optional(),
   labels: z.array(z.string().max(40)).max(20).optional(), components: z.array(z.string()).optional(), fixVersion: z.string().optional(),
   points: z.number().min(0).max(100).nullable().optional(), estimate: z.number().min(0).nullable().optional(),
   dueDate: z.string().nullable().optional(), startDate: z.string().nullable().optional(), sprintId: z.string().nullable().optional(), epicId: z.string().nullable().optional(),

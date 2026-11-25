@@ -2,28 +2,31 @@
 import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { CheckCircle2, Flag, Plus, Search, Target, Users } from 'lucide-react';
+import { CheckCircle2, Flag, KanbanSquare, List, Plus, Search, Target, Users } from 'lucide-react';
 import clsx from 'clsx';
 import { useProject } from '@/components/ProjectContext';
 import { Board } from '@/components/board/Board';
 import { IssueDrawer } from '@/components/issue/IssueDrawer';
+import { IssueTable } from '@/components/issue/IssueTable';
 import { CreateIssueModal } from '@/components/issue/CreateIssueModal';
 import { Avatar, Card, EmptyState, Modal, ProgressRing, Skeleton, Spinner, Select } from '@/components/ui';
 import { api, errMsg, invalidate, toast, useApi } from '@/lib/api';
 import { useMe } from '@/components/UserContext';
 
 export default function BoardPage({ params }: { params: Promise<{ key: string }> }) {
-  const { key } = use(params); const me = useMe(); const { project } = useProject();
+  const { key } = use(params); const me = useMe(); const { project, assignees } = useProject();
   const router = useRouter(); const path = usePathname(); const sp = useSearchParams();
   const selected = sp.get('selected');
   const { data, mutate, loading } = useApi<{ items: any[] }>(`/api/issues?project=${key}`);
   const { data: sprints, reload: reloadSprints } = useApi<any[]>(project.type === 'scrum' ? `/api/projects/${key}/sprints` : null);
-  const [q, setQ] = useState(''); const [mine, setMine] = useState(false); const [lanes, setLanes] = useState(false);
+  const { data: users } = useApi<any[]>(`/api/users?project=${key}`);
+  const [q, setQ] = useState(''); const [mine, setMine] = useState(false); const [lanes, setLanes] = useState(false); const [view, setView] = useState<'board' | 'list'>('board');
   const [create, setCreate] = useState<{ open: boolean; status?: string }>({ open: false });
   const [complete, setComplete] = useState(false);
   const ab = project.abilities;
   const active = sprints?.find((s) => s.state === 'active');
-  useEffect(() => { try { setLanes(localStorage.getItem(`orbit-lanes-${key}`) === '1'); } catch { /* ignore */ } }, [key]);
+  useEffect(() => { try { setLanes(localStorage.getItem(`orbit-lanes-${key}`) === '1'); setView(localStorage.getItem(`orbit-view-${key}`) === 'list' ? 'list' : 'board'); } catch { /* ignore */ } }, [key]);
+  const pickView = (v: 'board' | 'list') => { setView(v); try { localStorage.setItem(`orbit-view-${key}`, v); } catch { /* ignore */ } };
 
   const all = useMemo(() => data?.items ?? [], [data]);
   const epics = useMemo(() => Object.fromEntries(all.filter((i) => i.type === 'epic').map((i) => [i._id, i.summary])), [all]);
@@ -31,9 +34,10 @@ export default function BoardPage({ params }: { params: Promise<{ key: string }>
     let l = all.filter((i) => i.type !== 'epic');
     if (project.type === 'scrum') l = active ? l.filter((i) => String(i.sprintId) === String(active._id)) : [];
     if (mine) l = l.filter((i) => i.assigneeId === me.id);
+    if (assignees.length) l = l.filter((i) => assignees.includes(String(i.assigneeId)));
     if (q) l = l.filter((i) => (i.summary + i.key).toLowerCase().includes(q.toLowerCase()));
     return l;
-  }, [all, active, mine, q, project.type, me.id]);
+  }, [all, active, mine, assignees, q, project.type, me.id]);
 
   const setSel = (k: string | null) => { const p = new URLSearchParams(sp.toString()); k ? p.set('selected', k) : p.delete('selected'); router.replace(`${path}?${p}`, { scroll: false }); };
   const onChanged = (fn: (l: any[]) => any[]) => mutate({ items: fn(all) });
@@ -64,15 +68,23 @@ export default function BoardPage({ params }: { params: Promise<{ key: string }>
       <div className="mb-4 flex flex-wrap items-center gap-2.5">
         <div className="relative w-full sm:w-auto"><Search size={15} className="absolute left-3 top-[11px] text-faint" /><input aria-label="Filter board" className="input !h-9 !w-full !pl-9 sm:!w-60" placeholder="Filter issues" value={q} onChange={(e) => setQ(e.target.value)} /></div>
         <button aria-pressed={mine} onClick={() => setMine(!mine)} className={clsx('btn btn-sm', mine && '!border-[var(--accent)] !bg-[var(--accent-soft)]')}><Avatar user={me} size={18} /> Only my issues</button>
-        <button aria-pressed={lanes} onClick={() => { setLanes(!lanes); try { localStorage.setItem(`orbit-lanes-${key}`, lanes ? '0' : '1'); } catch { /* ignore */ } }} className={clsx('btn btn-sm', lanes && '!border-[var(--accent)] !bg-[var(--accent-soft)]')}><Users size={14} /> Swimlanes by assignee</button>
+        {view === 'board' && <button aria-pressed={lanes} onClick={() => { setLanes(!lanes); try { localStorage.setItem(`orbit-lanes-${key}`, lanes ? '0' : '1'); } catch { /* ignore */ } }} className={clsx('btn btn-sm', lanes && '!border-[var(--accent)] !bg-[var(--accent-soft)]')}><Users size={14} /> Swimlanes by assignee</button>}
+        <div className="inline-flex overflow-hidden rounded-lg border border-[var(--border)]" role="group" aria-label="View">
+          {([['board', 'Board', KanbanSquare], ['list', 'List', List]] as const).map(([id, label, Icon]) => (
+            <button key={id} type="button" aria-pressed={view === id} onClick={() => pickView(id)} className={clsx('flex h-8 items-center gap-1.5 px-3 text-[13px] font-medium', view === id ? 'bg-[var(--accent-soft)] text-accent' : 'text-muted hover:bg-[var(--surface-2)]')}><Icon size={14} />{label}</button>
+          ))}
+        </div>
         <span className="ml-auto flex items-center gap-3 text-[12.5px] text-muted"><span className="flex items-center gap-1"><Flag size={12} className="text-warning" />{visible.filter((i) => i.flagged).length} flagged</span><span>{visible.length} issues</span></span>
         {ab['issue.create'] && <button className="btn btn-primary btn-sm" onClick={() => setCreate({ open: true })}><Plus size={15} /> Create issue</button>}
       </div>
 
       {loading ? <div className="flex gap-4">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[420px] w-[min(300px,calc(100vw-4rem))] shrink-0" />)}</div>
-        : visible.length === 0 && (project.type !== 'scrum' || active) && !q && !mine ? <Card><EmptyState title="Nothing on the board yet" text="Create your first issue to get things moving." action={ab['issue.create'] && <button className="btn btn-primary" onClick={() => setCreate({ open: true })}><Plus size={15} />Create issue</button>} /></Card>
+        : visible.length === 0 && view === 'board' && (assignees.length > 0 || q || mine) && (project.type !== 'scrum' || active) ? <Card><EmptyState title="No issues match the current filters" /></Card>
+        : visible.length === 0 && (project.type !== 'scrum' || active) && !q && !mine && !assignees.length ? <Card><EmptyState title="Nothing on the board yet" text="Create your first issue to get things moving." action={ab['issue.create'] && <button className="btn btn-primary" onClick={() => setCreate({ open: true })}><Plus size={15} />Create issue</button>} /></Card>
         : project.type === 'scrum' && !active ? null
-        : (
+        : view === 'list' ? (
+          <Card className="overflow-hidden">{visible.length === 0 ? <EmptyState title="No matching issues" text="Adjust the filters or create a new issue." /> : <IssueTable items={visible} onOpen={setSel} statuses={project.statuses} users={users} canBulk={ab['issue.edit_any']} onChanged={() => mutate()} />}</Card>
+        ) : (
           <div className="space-y-6">
             {swimlanes.map((l: any) => (
               <div key={l.id}>

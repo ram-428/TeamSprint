@@ -25,7 +25,7 @@ export const GET = route(async (req, { user }) => {
 });
 
 const schema = z.object({
-  project: z.string(), type: z.enum(['epic', 'story', 'task', 'bug', 'subtask']).default('task'),
+  project: z.string(), type: z.string().trim().min(1).max(40).default('task'), // validated against the org's Issue Type master in createIssue
   summary: z.string().trim().min(3, 'Title needs at least 3 characters').max(200),
   description: z.string().max(20000).optional(), priority: z.enum(['Highest', 'High', 'Medium', 'Low', 'Lowest']).default('Medium'),
   assigneeId: z.string().nullish(), labels: z.array(z.string()).optional(), components: z.array(z.string()).optional(), fixVersion: z.string().optional(),

@@ -25,6 +25,15 @@ export const Org = model<any>('Org', S({
 
 export const Team = model<any>('Team', S({ orgId: { type: oid, index: true }, name: String, color: String, leadId: oid, memberIds: [oid] }, opts));
 
+/** Organization-level master lists. They feed Create issue, the board columns and issue validation for every project in the org. */
+const issueTypeMasterSchema = S({ orgId: { type: oid, index: true }, key: String, name: String, color: String, active: { type: Boolean, default: true }, system: { type: Boolean, default: false }, order: { type: Number, default: 0 } }, opts);
+issueTypeMasterSchema.index({ orgId: 1, key: 1 }, { unique: true });
+export const IssueTypeMaster = model<any>('IssueTypeMaster', issueTypeMasterSchema);
+
+const statusMasterSchema = S({ orgId: { type: oid, index: true }, id: String, name: String, category: String, color: String, active: { type: Boolean, default: true }, order: { type: Number, default: 0 } }, opts);
+statusMasterSchema.index({ orgId: 1, id: 1 }, { unique: true });
+export const StatusMaster = model<any>('StatusMaster', statusMasterSchema);
+
 const StatusSub = S({ id: String, name: String, category: String, color: String }, { _id: false });
 const projectSchema = S({
   orgId: { type: oid, index: true }, key: String, name: String, description: String,
