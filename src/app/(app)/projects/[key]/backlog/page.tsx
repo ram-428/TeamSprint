@@ -50,7 +50,7 @@ function Section({ id, title, sub, keys, children, header, collapsed }: { id: st
 }
 
 export default function BacklogPage({ params }: { params: Promise<{ key: string }> }) {
-  const { key } = use(params); const { project } = useProject(); const ab = project.abilities;
+  const { key } = use(params); const { project, assigneeIds } = useProject(); const ab = project.abilities;
   const router = useRouter(); const path = usePathname(); const sp = useSearchParams(); const selected = sp.get('selected');
   const { data, mutate, loading } = useApi<{ items: any[] }>(`/api/issues?project=${key}`);
   const { data: sprints, reload: reloadSprints, loading: sl } = useApi<any[]>(`/api/projects/${key}/sprints`);
@@ -65,7 +65,12 @@ export default function BacklogPage({ params }: { params: Promise<{ key: string 
   const planning = useMemo(() => (sprints || []).filter((s) => s.state !== 'closed'), [sprints]);
   const items = useMemo(() => all.filter((i) => i.type !== 'epic' && i.type !== 'subtask' && i.statusCategory !== 'done' || (i.type !== 'epic' && i.type !== 'subtask' && planning.some((s) => String(s._id) === String(i.sprintId)))), [all, planning]);
   const byKey = useMemo(() => new Map(items.map((i) => [i.key, i])), [items]);
-  const match = (i: any) => (!q || (i.summary + i.key).toLowerCase().includes(q.toLowerCase())) && (!epicF || i.epicId === epicF);
+  const hasFilters = Boolean(q || epicF || assigneeIds.length);
+  const visibleKeys = (keys: string[] = []) => keys.filter((key) => {
+    const issue = byKey.get(key);
+    return issue && (!q || (issue.summary + issue.key).toLowerCase().includes(q.toLowerCase()))
+      && (!epicF || issue.epicId === epicF) && (!assigneeIds.length || assigneeIds.includes(issue.assigneeId));
+  });
 
   const build = () => {
     const m: Record<string, string[]> = { backlog: [] };
@@ -101,7 +106,7 @@ export default function BacklogPage({ params }: { params: Promise<{ key: string 
   };
 
   const setSel = (k: string | null) => { const p = new URLSearchParams(sp.toString()); k ? p.set('selected', k) : p.delete('selected'); router.replace(`${path}?${p}`, { scroll: false }); };
-  const stats = (ks: string[]) => { const is = ks.map((k) => byKey.get(k)).filter(Boolean); const pts = (c: string) => is.filter((i) => i.statusCategory === c).reduce((a, i) => a + (i.points || 0), 0); return { total: is.reduce((a, i) => a + (i.points || 0), 0), todo: pts('todo'), prog: pts('inprogress'), done: pts('done'), n: is.length }; };
+  const stats = (ks: string[]) => { const is = ks.map((k) => byKey.get(k)).filter(Boolean); const pts = (c: string) => is.filter((i) => i.statusCategory === c).reduce((a, i) => a + (i.points || 0), 0); return { total: is.reduce((a, i) => a + (i.points || 0), 0), todo: pts('todo'), prog: pts('inprogress'), done: pts('done') }; };
   const closed = (sprints || []).filter((s) => s.state === 'closed' && s.completed);
   const avgVelocity = closed.length ? Math.round(closed.slice(-3).reduce((a, s) => a + s.completed, 0) / Math.min(3, closed.length)) : 0;
 
@@ -114,6 +119,8 @@ export default function BacklogPage({ params }: { params: Promise<{ key: string 
     try { for (const k of picks) await api('/api/issues/rank', { body: { key: k, sprintId: sprint._id } }); mutate(); reloadSprints(); toast.success(`Added ${picks.length} issues to fill ~${avgVelocity} pts capacity`); } catch (e) { toast.error(errMsg(e)); }
   }
   const activeIssue = active ? byKey.get(active) : null;
+  const backlogKeys = visibleKeys(secs.backlog);
+  const noMatches = 'No issues match the current filters';
 
   return (
     <div>
@@ -128,23 +135,24 @@ export default function BacklogPage({ params }: { params: Promise<{ key: string 
           <div className="space-y-4">
             {planning.map((s) => {
               const st = stats(secs[s._id] || []); const isCol = collapsed[s._id];
+              const keys = visibleKeys(secs[s._id]);
               return (
-                <Section key={s._id} id={s._id} title={s.name} keys={secs[s._id] || []} collapsed={!!isCol} sub="Plan your sprint by dragging issues from the backlog"
+                <Section key={s._id} id={s._id} title={s.name} keys={keys} collapsed={!!isCol} sub={hasFilters ? noMatches : 'Plan your sprint by dragging issues from the backlog'}
                   header={<div className="flex flex-wrap items-center gap-3 px-4 py-3">
                     <button aria-label="Toggle section" onClick={() => setCollapsed({ ...collapsed, [s._id]: !isCol })}><ChevronDown size={17} className={clsx('transition-transform', isCol && '-rotate-90')} /></button>
-                    <div className="min-w-0"><div className="flex items-center gap-2"><h3 className="font-semibold">{s.name}</h3>{s.state === 'active' && <span className="chip !text-success">Active</span>}<span className="text-xs text-muted">{st.n} issues</span></div>
+                    <div className="min-w-0"><div className="flex items-center gap-2"><h3 className="font-semibold">{s.name}</h3>{s.state === 'active' && <span className="chip !text-success">Active</span>}<span className="text-xs text-muted">{keys.length} issues</span></div>
                       {(s.startDate || s.goal) && <p className="truncate text-xs text-muted">{s.startDate && `${new Date(s.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${new Date(s.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`}{s.goal && ` · ${s.goal}`}</p>}</div>
                     <div className="ml-auto flex flex-wrap items-center gap-2"><span title="To do" className="flex h-6 min-w-6 items-center justify-center rounded-full bg-slate-500/25 px-2 text-[11px] font-bold text-slate-300">{st.todo}</span><span title="In progress" className="flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--accent-soft)] px-2 text-[11px] font-bold text-accent">{st.prog}</span><span title="Done" className="flex h-6 min-w-6 items-center justify-center rounded-full bg-success/20 px-2 text-[11px] font-bold text-success">{st.done}</span>
                       {avgVelocity > 0 && s.state === 'future' && <span className={clsx('text-xs', st.total > avgVelocity ? 'font-semibold text-warning' : 'text-muted')}>{st.total}/{avgVelocity} pts</span>}
                       {ab['sprint.manage'] && s.state === 'future' && <><button className="btn btn-sm" onClick={() => suggest(s)} title="Fill to team velocity"><Wand2 size={13} /> Suggest</button><button className="btn btn-primary btn-sm" onClick={() => setStartFor(s)}><Play size={13} /> Start sprint</button><button aria-label="Delete sprint" className="btn btn-ghost btn-sm btn-icon" onClick={() => setDelFor(s)}><Trash2 size={14} /></button></>}</div>
                   </div>}>
-                  {(secs[s._id] || []).map((k) => byKey.get(k) && match(byKey.get(k)) && <Row key={k} issue={byKey.get(k)} epic={epicName(byKey.get(k))} disabled={!ab['issue.edit_any']} onOpen={setSel} />)}
+                  {keys.map((k) => <Row key={k} issue={byKey.get(k)} epic={epicName(byKey.get(k))} disabled={!ab['issue.edit_any']} onOpen={setSel} />)}
                 </Section>
               );
             })}
-            <Section id="backlog" title="Backlog" keys={secs.backlog || []} collapsed={!!collapsed.backlog} sub="Backlog is empty — create an issue to get started"
-              header={<div className="flex items-center gap-3 px-4 py-3"><button aria-label="Toggle section" onClick={() => setCollapsed({ ...collapsed, backlog: !collapsed.backlog })}><ChevronDown size={17} className={clsx('transition-transform', collapsed.backlog && '-rotate-90')} /></button><h3 className="font-semibold">Backlog</h3><span className="text-xs text-muted">{(secs.backlog || []).length} issues · {stats(secs.backlog || []).total} pts</span>{ab['issue.create'] && <button className="btn btn-sm ml-auto" onClick={() => setCreate('backlog')}><Plus size={13} /> Create issue</button>}</div>}>
-              {(secs.backlog || []).map((k) => byKey.get(k) && match(byKey.get(k)) && <Row key={k} issue={byKey.get(k)} epic={epicName(byKey.get(k))} disabled={!ab['issue.edit_any']} onOpen={setSel} />)}
+            <Section id="backlog" title="Backlog" keys={backlogKeys} collapsed={!!collapsed.backlog} sub={hasFilters ? noMatches : 'Backlog is empty — create an issue to get started'}
+              header={<div className="flex items-center gap-3 px-4 py-3"><button aria-label="Toggle section" onClick={() => setCollapsed({ ...collapsed, backlog: !collapsed.backlog })}><ChevronDown size={17} className={clsx('transition-transform', collapsed.backlog && '-rotate-90')} /></button><h3 className="font-semibold">Backlog</h3><span className="text-xs text-muted">{backlogKeys.length} issues · {stats(backlogKeys).total} pts</span>{ab['issue.create'] && <button className="btn btn-sm ml-auto" onClick={() => setCreate('backlog')}><Plus size={13} /> Create issue</button>}</div>}>
+              {backlogKeys.map((k) => <Row key={k} issue={byKey.get(k)} epic={epicName(byKey.get(k))} disabled={!ab['issue.edit_any']} onOpen={setSel} />)}
             </Section>
           </div>
           <DragOverlay>{activeIssue ? <Row issue={activeIssue} disabled onOpen={() => {}} overlay /> : null}</DragOverlay>

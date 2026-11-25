@@ -15,7 +15,7 @@ export const IssueCard = forwardRef<HTMLDivElement, Props>(function IssueCard({ 
   return (
     <div ref={ref} {...rest} style={style}
       className={clsx(
-        'group relative cursor-grab rounded-[10px] border bg-[var(--surface-solid)] px-2.5 py-2 text-left transition-[box-shadow,border-color,background] active:cursor-grabbing',
+        'group relative cursor-pointer rounded-[10px] border bg-[var(--surface-solid)] px-2.5 py-2 text-left transition-[box-shadow,border-color,background]',
         'border-[var(--border)] hover:border-[var(--border-strong)] hover:shadow-[0_8px_26px_-12px_rgba(124,92,255,.55)]',
         issue.flagged && 'flagged-card !border-warning/50', dragging && 'opacity-35', overlay && 'rotate-[2.5deg] scale-[1.04] !border-[var(--accent)] shadow-[0_24px_50px_-12px_rgba(0,0,0,.7),0_0_0_1px_var(--accent)]',
         flash && 'ring-2 ring-[var(--success)] ring-offset-0', shake && 'animate-[shake_.4s]', selected && 'ring-2 ring-[var(--accent)]', className,
