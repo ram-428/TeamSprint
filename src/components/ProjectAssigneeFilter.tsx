@@ -21,18 +21,18 @@ export function ProjectAssigneeFilter({ members, selectedIds, onToggle, onClear 
         const on = selectedIds.includes(member._id); const dim = anySelected && !on;
         return (
           <button key={member._id} type="button" aria-label={`${on ? 'Remove filter' : 'Show only issues of'} ${member.name}`} title={`${member.name}${on ? ' (filtered)' : ''}`}
-            aria-pressed={on} onClick={() => onToggle(member._id)} style={{ marginLeft: i ? -8 : 0 }}
-            className={clsx('relative inline-flex rounded-full transition hover:z-10 hover:-translate-y-0.5', on ? 'z-[5] ring-2 ring-[var(--accent)]' : dim ? 'opacity-40 hover:opacity-100' : '')}>
-            <Avatar user={member} size={28} ring />
+            aria-pressed={on} onClick={() => onToggle(member._id)} style={{ marginLeft: i ? -6 : 0 }}
+            className={clsx('group relative inline-flex rounded-full bg-[var(--bg)] transition hover:z-10 hover:-translate-y-0.5', on && 'z-[5] ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)]')}>
+            <span className={clsx('inline-flex rounded-full transition', dim && 'opacity-45 grayscale group-hover:opacity-100 group-hover:grayscale-0')}><Avatar user={member} size={28} ring /></span>
           </button>
         );
       })}
       {overflow.length > 0 && (
         <Dropdown trigger={({ open, toggle }) => (
-          <button type="button" aria-expanded={open} style={{ marginLeft: -8 }}
+          <button type="button" aria-expanded={open} style={{ marginLeft: -6, boxShadow: '0 0 0 2px var(--bg)' }}
             aria-label={`Filter by more assignees${selectedInOverflow ? ` (${selectedInOverflow} selected)` : ''}`}
             title="More assignees" onClick={toggle}
-            className={clsx('relative inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[var(--border)] bg-surface-2 px-1 text-[10px] font-semibold text-muted', selectedInOverflow > 0 && 'ring-2 ring-[var(--accent)]')}>
+            className={clsx('relative inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-1.5 text-[10.5px] font-semibold text-muted hover:text-text', selectedInOverflow > 0 && 'z-[5] !text-[var(--accent)] ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--bg)]')}>
             +{overflow.length}
           </button>
         )}>
@@ -49,7 +49,7 @@ export function ProjectAssigneeFilter({ members, selectedIds, onToggle, onClear 
           )}
         </Dropdown>
       )}
-      {anySelected && onClear && <button type="button" className="ml-2 text-xs font-semibold text-accent2 hover:underline" onClick={onClear}>Clear ({selectedIds.length})</button>}
+      {anySelected && onClear && <button type="button" className="ml-3 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[12.5px] font-medium text-accent2 hover:bg-[var(--accent-soft)]" onClick={onClear}>Clear ({selectedIds.length})</button>}
     </div>
   );
 }
