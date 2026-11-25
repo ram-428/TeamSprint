@@ -25,18 +25,18 @@ function Column({ status, items, wip, children, count, canCreate, onCreate }: { 
   const { setNodeRef, isOver } = useDroppable({ id: `col:${status.id}` });
   const over = wip ? count > wip : false; const atLimit = wip ? count === wip : false;
   return (
-    <div className={clsx('flex w-[min(300px,calc(100vw-4rem))] shrink-0 flex-col rounded-[22px] border p-2.5 transition-colors', isOver ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--border)] bg-[var(--surface)]', over && 'border-danger/70 shadow-[0_0_0_1px_var(--danger),0_0_32px_-8px_var(--danger)]')}>
-      <div className="mb-2.5 flex items-center gap-2 px-2 pt-1.5">
-        <span className="h-2.5 w-2.5 rounded-full" style={{ background: status.color, boxShadow: `0 0 10px ${status.color}` }} />
-        <h3 className="text-[12.5px] font-bold uppercase tracking-wide">{status.name}</h3>
+    <div className={clsx('flex w-[min(240px,calc(100vw-4rem))] shrink-0 flex-col rounded-[14px] border p-1.5 transition-colors', isOver ? 'border-[var(--accent)] bg-[var(--accent-soft)]' : 'border-[var(--border)] bg-[var(--surface)]', over && 'border-danger/70 shadow-[0_0_0_1px_var(--danger),0_0_32px_-8px_var(--danger)]')}>
+      <div className="mb-1.5 flex items-center gap-1.5 px-1.5 pt-1">
+        <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: status.color, boxShadow: `0 0 8px ${status.color}` }} />
+        <h3 className="truncate text-[11.5px] font-bold uppercase tracking-wide">{status.name}</h3>
         <span className={clsx('rounded-full px-2 text-[11px] font-semibold', over ? 'bg-danger/20 text-danger' : 'bg-[var(--surface-2)] text-muted')}>{count}{wip ? ` / ${wip}` : ''}</span>
         {over && <span className="text-[10.5px] font-semibold text-danger">WIP exceeded</span>}{atLimit && <span className="text-[10.5px] font-semibold text-warning">at limit</span>}
         {canCreate && <button aria-label={`Create issue in ${status.name}`} onClick={onCreate} className="btn btn-ghost btn-sm btn-icon ml-auto !h-7 !w-7 opacity-60 hover:opacity-100"><Plus size={14} /></button>}
       </div>
       <SortableContext items={items} strategy={verticalListSortingStrategy}>
-        <div ref={setNodeRef} className="flex min-h-[120px] flex-1 flex-col gap-2.5 px-0.5 pb-1">
+        <div ref={setNodeRef} className="flex min-h-[72px] flex-1 flex-col gap-1.5 px-0.5 pb-0.5">
           {children}
-          {items.length === 0 && <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-[var(--border)] py-8 text-xs text-faint">Drop issues here</div>}
+          {items.length === 0 && <div className="flex flex-1 items-center justify-center rounded-[10px] border border-dashed border-[var(--border)] py-4 text-[11px] text-faint">Drop issues here</div>}
         </div>
       </SortableContext>
     </div>
@@ -99,7 +99,7 @@ export function Board({ project, issues, epics, canMove, onOpen, onChanged, onCr
   const activeIssue = active ? byKey.get(active) : null;
   return (
     <DndContext id={dragId} sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => { dragging.current = false; setActive(null); setCols(build()); }}>
-      <div className="flex gap-4 overflow-x-auto pb-3">
+      <div className="flex gap-2.5 overflow-x-auto pb-3">
         {project.statuses.map((s: any, i: number) => (
           <motion.div key={s.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
             <Column status={s} items={cols[s.id] || []} count={(cols[s.id] || []).length} wip={project.wip?.[s.id]} canCreate={!!onCreate} onCreate={() => onCreate?.(s.id)}>

@@ -32,31 +32,41 @@ export default function ProjectsPage() {
         <div className="glass flex rounded-xl p-0.5">{(['grid', 'table'] as const).map((v) => <button key={v} aria-label={`${v} view`} onClick={() => setView(v)} className={clsx('rounded-[10px] p-1.5', view === v ? 'bg-[var(--surface-2)] text-text' : 'text-muted')}>{v === 'grid' ? <LayoutGrid size={16} /> : <List size={16} />}</button>)}</div>
         {me.role !== 'guest' && <button className="btn btn-primary" onClick={() => setCreate(true)}><Plus size={16} /> New project</button>}
       </>} />
-      {loading ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-44" />)}</div>
+      {loading ? <div className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{[0, 1, 2, 3, 4, 5, 6, 7].map((i) => <Skeleton key={i} className="h-[104px]" />)}</div>
         : list.length === 0 ? <Card><EmptyState title={q ? 'No projects match' : 'No projects yet'} text={q ? 'Try a different search.' : 'Create your first project to start planning work.'} action={!q && me.role !== 'guest' && <button className="btn btn-primary" onClick={() => setCreate(true)}><Plus size={16} />New project</button>} /></Card>
         : view === 'grid' ? (
-          <><motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.05 } } }} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <><motion.div initial="hidden" animate="show" variants={{ show: { transition: { staggerChildren: 0.05 } } }} className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {pg.rows.map((p) => {
               const I = ICONS[p.icon] || Rocket; const pct = p.total ? (p.done / p.total) * 100 : 0;
               return (
-                <motion.div key={p._id} variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }} whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 300, damping: 24 }}>
+                <motion.div key={p._id} variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }} whileHover={{ y: -2 }} transition={{ type: 'spring', stiffness: 300, damping: 24 }}>
                   <Link href={`/projects/${p.key}/${p.type === 'scrum' ? 'board' : 'board'}`}>
-                    <Card spotlight className="group h-full p-5">
-                      <div className="flex items-start justify-between"><span className="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${p.color}, ${p.color}88)`, boxShadow: `0 10px 24px -10px ${p.color}` }}><I size={22} /></span>
-                        <button aria-label={p.starred ? 'Unstar' : 'Star'} onClick={(e) => star(p, e)} className="rounded-lg p-1.5 text-faint transition-colors hover:text-warning"><Star size={17} className={p.starred ? 'fill-[var(--warning)] text-warning' : ''} /></button></div>
-                      <div className="mt-4 flex items-center gap-2"><h3 className="text-[17px] font-semibold">{p.name}</h3>{p.visibility === 'private' && <Lock size={12} className="text-faint" />}</div>
-                      <div className="mt-0.5 flex items-center gap-2 text-xs text-muted"><span className="key font-semibold">{p.key}</span><span>·</span><span>{TYPE_LABEL[p.type]}</span></div>
-                      <p className="mt-2 line-clamp-2 min-h-[40px] text-[13px] text-muted">{p.description}</p>
-                      <div className="mt-4"><div className="mb-1.5 flex justify-between text-xs text-muted"><span>{p.done}/{p.total} done</span><span>{Math.round(pct)}%</span></div><ProgressBar value={pct} color={p.color} /></div>
-                      <div className="mt-4 flex items-center justify-between"><div className="flex items-center gap-2 text-xs text-muted"><Avatar user={p.lead} size={22} />{p.lead?.name}</div>
-                        {p.activeSprint ? <span className="chip !text-accent2"><span className="pulse-dot h-1.5 w-1.5 rounded-full bg-accent2 text-accent2" />{p.activeSprint.name.replace(/^.*Sprint /, 'Sprint ')}</span> : <ArrowRight size={15} className="text-faint transition-transform group-hover:translate-x-1" />}</div>
+                    <Card spotlight className="group h-full p-2.5">
+                      {/* icon, name and key/type share one row to keep the card compact */}
+                      <div className="flex items-start gap-2">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] text-white" style={{ background: `linear-gradient(135deg, ${p.color}, ${p.color}88)` }}><I size={14} /></span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1"><h3 className="truncate text-[13.5px] font-semibold leading-tight">{p.name}</h3>{p.visibility === 'private' && <Lock size={10} className="shrink-0 text-faint" />}</div>
+                          <div className="flex items-center gap-1 text-[11px] text-muted"><span className="key !text-[10.5px] font-semibold">{p.key}</span><span>·</span><span className="truncate">{TYPE_LABEL[p.type]}</span></div>
+                        </div>
+                        <button aria-label={p.starred ? 'Unstar' : 'Star'} onClick={(e) => star(p, e)} className="-mr-1 -mt-0.5 shrink-0 rounded-md p-0.5 text-faint transition-colors hover:text-warning"><Star size={13} className={p.starred ? 'fill-[var(--warning)] text-warning' : ''} /></button>
+                      </div>
+                      <p className="mt-1.5 truncate text-[11.5px] text-muted" title={p.description}>{p.description || ' '}</p>
+                      <div className="mt-1.5"><ProgressBar value={pct} color={p.color} height={3} /></div>
+                      {/* footer: lead on the left; progress (or the active sprint) on the right */}
+                      <div className="mt-1.5 flex items-center justify-between gap-2 text-[11px] text-muted">
+                        <div className="flex min-w-0 items-center gap-1"><Avatar user={p.lead} size={16} /><span className="truncate">{p.lead?.name}</span></div>
+                        {p.activeSprint
+                          ? <span className="flex shrink-0 items-center gap-1 font-medium text-accent2" title={`${p.done}/${p.total} done · ${Math.round(pct)}%`}><span className="pulse-dot h-1.5 w-1.5 rounded-full bg-accent2 text-accent2" />{p.activeSprint.name.replace(/^.*Sprint /, 'Sprint ')}</span>
+                          : <span className="shrink-0 tabular-nums">{p.done}/{p.total} · {Math.round(pct)}%</span>}
+                      </div>
                     </Card>
                   </Link>
                 </motion.div>
               );
             })}
           </motion.div>
-          <Card className="mt-4"><Pagination {...pg.bar} /></Card></>
+          <Card className="mt-3"><Pagination {...pg.bar} /></Card></>
         ) : (
           <Card className="overflow-hidden"><table className="w-full text-left text-[13.5px]"><thead className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-muted"><tr><th className="p-4">Name</th><th>Key</th><th>Type</th><th>Lead</th><th>Progress</th><th /></tr></thead>
             <tbody>{pg.rows.map((p) => <tr key={p._id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"><td className="p-4"><Link href={`/projects/${p.key}/board`} className="flex items-center gap-2.5 font-semibold"><span className="h-3 w-3 rounded" style={{ background: p.color }} />{p.name}</Link></td><td className="key">{p.key}</td><td>{TYPE_LABEL[p.type]}</td><td><div className="flex items-center gap-2"><Avatar user={p.lead} size={22} />{p.lead?.name}</div></td><td className="w-48"><ProgressBar value={p.total ? (p.done / p.total) * 100 : 0} color={p.color} /></td><td><button onClick={(e) => star(p, e)} aria-label="Star"><Star size={15} className={p.starred ? 'fill-[var(--warning)] text-warning' : 'text-faint'} /></button></td></tr>)}</tbody></table><Pagination {...pg.bar} /></Card>

@@ -8,7 +8,7 @@ import { Logo } from '@/components/Logo';
 import { LoginBoard } from '@/components/LoginBoard';
 import { ThemeSwitch } from '@/components/ThemeSwitch';
 import { Spinner } from '@/components/ui';
-import { DotsLoader } from '@/components/DotsLoader';
+import { BrandLoader } from '@/components/BrandLoader';
 import { api, ApiError } from '@/lib/api';
 
 const WORDS = ['plan', 'track', 'ship', 'celebrate'];
@@ -111,7 +111,7 @@ function LoginForm() {
       </div>
 
       {/* sign-in succeeded: hero + card are gone, the loader sits in the middle of the page until the dashboard has loaded */}
-      <AnimatePresence>{ok && <motion.div key="signing-in" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45, delay: 0.2 }} className="absolute inset-0 z-20 flex items-center justify-center"><DotsLoader size={240} label="Signing you in…" /></motion.div>}</AnimatePresence>
+      <AnimatePresence>{ok && <motion.div key="signing-in" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.45, delay: 0.2 }} className="absolute inset-0 z-20 flex items-center justify-center"><BrandLoader size={96} label="Signing you in…" /></motion.div>}</AnimatePresence>
     </div>
   );
 }

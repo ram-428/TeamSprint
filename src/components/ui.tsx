@@ -82,10 +82,10 @@ export function relTime(d: string | Date) {
 /* ───────────── layout bits ───────────── */
 export function PageHeader({ title, subtitle, actions, icon }: { title: ReactNode; subtitle?: ReactNode; actions?: ReactNode; icon?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div className="flex min-w-0 items-center gap-3.5">
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+      <div className="flex min-w-0 items-center gap-3">
         {icon}
-        <div className="min-w-0"><h1 className="text-[22px] font-semibold leading-tight sm:text-[26px]">{title}</h1>{subtitle && <p className="mt-0.5 text-[14px] text-muted">{subtitle}</p>}</div>
+        <div className="min-w-0"><h1 className="text-[22px] font-semibold leading-tight sm:text-[24px]">{title}</h1>{subtitle && <p className="mt-1 text-[14px] text-muted">{subtitle}</p>}</div>
       </div>
       <div className="flex flex-wrap items-center gap-2">{actions}</div>
     </div>
@@ -152,11 +152,11 @@ export function CountUp({ value, duration = 1, decimals = 0 }: { value: number; 
 /* ───────────── Tabs with sliding indicator ───────────── */
 export function Tabs<T extends string>({ tabs, value, onChange, id }: { tabs: { id: T; label: ReactNode; count?: number }[]; value: T; onChange: (v: T) => void; id: string }) {
   return (
-    <div role="tablist" className="glass inline-flex max-w-full flex-wrap gap-1 rounded-2xl p-1">
+    <div role="tablist" className="inline-flex max-w-full flex-wrap gap-1 border-b-2 border-[var(--border)]">
       {tabs.map((t) => (
-        <button key={t.id} role="tab" aria-selected={value === t.id} onClick={() => onChange(t.id)} className={clsx('relative rounded-xl px-3.5 py-1.5 text-[13.5px] font-medium transition-colors', value === t.id ? 'text-text' : 'text-muted hover:text-text')}>
-          {value === t.id && <motion.span layoutId={`tab-${id}`} className="absolute inset-0 rounded-xl bg-[var(--surface-2)] shadow-[0_0_0_1px_var(--border-strong),0_4px_16px_-6px_rgba(124,92,255,.5)]" transition={{ type: 'spring', stiffness: 500, damping: 36 }} />}
-          <span className="relative flex items-center gap-1.5">{t.label}{t.count !== undefined && <span className="rounded-full bg-[var(--surface-2)] px-1.5 text-[11px] text-muted">{t.count}</span>}</span>
+        <button key={t.id} role="tab" aria-selected={value === t.id} onClick={() => onChange(t.id)} className={clsx('relative -mb-[2px] border-b-2 border-transparent px-2 pb-2 pt-1 text-[14px] font-medium transition-colors', value === t.id ? 'text-accent' : 'text-muted hover:border-[var(--border-strong)] hover:text-text')}>
+          {value === t.id && <motion.span layoutId={`tab-${id}`} className="absolute inset-x-0 -bottom-[2px] h-[2px] bg-[var(--accent)]" transition={{ type: 'spring', stiffness: 500, damping: 40 }} />}
+          <span className="relative flex items-center gap-1.5">{t.label}{t.count !== undefined && <span className={clsx('rounded-[3px] px-1.5 text-[11px] font-semibold', value === t.id ? 'bg-[var(--accent-soft)] text-accent' : 'bg-[var(--surface-2)] text-muted')}>{t.count}</span>}</span>
         </button>
       ))}
     </div>
@@ -243,7 +243,7 @@ export function Dropdown({ trigger, children, align = 'right' }: { trigger: (p: 
   );
 }
 export function MenuItem({ children, onClick, danger, icon, active }: { children: ReactNode; onClick?: () => void; danger?: boolean; icon?: ReactNode; active?: boolean }) {
-  return <button onClick={onClick} className={clsx('flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13.5px] transition-colors hover:bg-[var(--surface-2)]', danger && 'text-danger', active && 'bg-[var(--accent-soft)]')}>{icon}{children}</button>;
+  return <button onClick={onClick} className={clsx('relative flex w-full items-center gap-2.5 rounded-[3px] px-3 py-2 text-left text-[14px] transition-colors hover:bg-[var(--surface-2)]', danger && 'text-danger', active && 'bg-[var(--accent-soft)] text-accent')}>{icon}{children}</button>;
 }
 
 const SEARCH_THRESHOLD = 7;
