@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  LayoutDashboard, FolderKanban, Search, Bell, Plus, Sun, Moon, Contrast, LogOut, Settings, Target, Gauge, ShieldCheck, Building2, PanelLeft,
-  Command, Filter, Eye, X, UserCircle2, HelpCircle,
+  LayoutDashboard, FolderKanban, Search, Bell, Plus, Sun, Moon, Contrast, LogOut, Settings, Target, Gauge, ShieldCheck, Building2,
+  Command, Filter, Eye, X, UserCircle2, Menu, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { Logo } from './Logo';
@@ -105,12 +105,20 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
         {/* top navigation bar: full width, like a work-management app header */}
         <header className="fixed inset-x-0 z-40 border-b border-[var(--border)] bg-[var(--surface-solid)]" style={{ top }}>
           <div className="flex h-14 items-center gap-1.5 px-2 sm:gap-2 sm:px-3">
-            {/* visibility lives on wrappers: the .btn rule would otherwise override Tailwind's hidden/flex utilities */}
-            <span className="shrink-0 lg:hidden"><button className="btn btn-ghost btn-icon" aria-label="Open menu" title="Open menu" onClick={() => setMobile(true)}><PanelLeft size={18} /></button></span>
-            <span className="hidden shrink-0 lg:block"><button className="btn btn-ghost btn-icon" onClick={toggleCollapse} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={`${collapsed ? 'Expand' : 'Collapse'} sidebar ([)`}><PanelLeft size={18} /></button></span>
             <Link href="/dashboard" className="flex shrink-0 items-center gap-2 rounded-[3px] px-1.5 py-1 hover:bg-[var(--surface-2)]" aria-label="Team Sprint home">
               <Logo text={false} size={26} /><span className="hidden text-[16px] font-semibold tracking-tight sm:inline">Team Sprint</span>
             </Link>
+            {/* sidebar toggle sits right of the logo; visibility lives on wrappers because the .btn rule would otherwise override Tailwind's hidden/flex utilities */}
+            <span className="shrink-0 lg:hidden">
+              <button className="btn btn-ghost btn-icon" aria-label="Open menu" title="Open menu" onClick={() => setMobile(true)}>
+                <Menu size={18} />
+              </button>
+            </span>
+            <span className="hidden shrink-0 lg:block">
+              <button className="btn btn-ghost btn-icon" onClick={toggleCollapse} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={`${collapsed ? 'Expand' : 'Collapse'} sidebar ([)`}>
+                {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+              </button>
+            </span>
             <div className="mx-auto flex min-w-0 flex-1 items-center justify-center gap-2 px-1 sm:px-4">
               <button onClick={() => setPalette(true)} className="flex h-9 min-w-0 flex-1 items-center gap-2.5 rounded-[6px] border border-[var(--border-strong)] bg-[var(--surface)] px-3 text-left text-faint transition-colors hover:bg-[var(--surface-2)] md:max-w-[560px]" aria-label="Search">
                 <Search size={16} className="shrink-0" /><span className="flex-1 truncate text-[14px]">Search</span><kbd className="hidden sm:inline"><Command size={10} className="inline" /> K</kbd>
@@ -119,7 +127,6 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
             </div>
             {me.platformRole === 'super_admin' && !me.impersonatedBy && <OrgSwitcher me={me} path={path} />}
             <div className="flex shrink-0 items-center gap-0.5">
-                <span className="hidden sm:block"><button className="btn btn-ghost btn-icon" aria-label="Keyboard shortcuts" onClick={() => setHelp(true)}><HelpCircle size={18} /></button></span>
                 <button className="btn btn-ghost btn-icon" aria-label="Toggle theme" onClick={toggleTheme}><AnimatePresence mode="wait" initial={false}><motion.span key={theme} initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.18 }}>{theme === 'dark' ? <Sun size={18} /> : theme === 'light' ? <Contrast size={18} /> : <Moon size={18} />}</motion.span></AnimatePresence></button>
                 <Bell2 />
                 <Dropdown trigger={({ toggle }) => <button onClick={toggle} className="ml-1 flex items-center rounded-full p-0.5 transition-colors hover:bg-[var(--surface-2)]" aria-label="Account menu"><Avatar user={me} size={28} /></button>}>
@@ -139,13 +146,13 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
         </header>
 
         {/* desktop sidebar: flush left, below the header */}
-        <aside className={clsx('fixed bottom-0 left-0 z-30 hidden border-r border-[var(--border)] bg-[var(--surface-solid)] lg:block', ready && 'transition-[width] duration-200', collapsed ? 'w-[56px]' : 'w-[240px]')} style={{ top: top + 56 }}>{sidebar(collapsed)}</aside>
+        <aside className={clsx('fixed bottom-0 left-0 z-30 hidden border-r border-[var(--border)] bg-[var(--surface-solid)] lg:block', ready && 'transition-[width] duration-200', collapsed ? 'w-[56px]' : 'w-[200px]')} style={{ top: top + 56 }}>{sidebar(collapsed)}</aside>
         {/* mobile drawer */}
         <AnimatePresence>
           {mobile && (
             <div className="fixed inset-0 z-[60] lg:hidden">
               <motion.div className="absolute inset-0 bg-[rgba(9,30,66,0.54)]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobile(false)} />
-              <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: 'spring', stiffness: 360, damping: 36 }} className="absolute bottom-0 left-0 top-0 flex w-[260px] flex-col border-r border-[var(--border)] bg-[var(--surface-solid)]">
+              <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: 'spring', stiffness: 360, damping: 36 }} className="absolute bottom-0 left-0 top-0 flex w-[220px] flex-col border-r border-[var(--border)] bg-[var(--surface-solid)]">
                 <div className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--border)] px-3"><Logo text={false} size={26} /><span className="text-[16px] font-semibold">Team Sprint</span></div>
                 <div className="min-h-0 flex-1">{sidebar(false)}</div>
               </motion.aside>
@@ -153,8 +160,8 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
           )}
         </AnimatePresence>
 
-        <div className={clsx(ready && 'transition-[padding] duration-200', collapsed ? 'lg:pl-[56px]' : 'lg:pl-[240px]')} style={{ paddingTop: top + 56 }}>
-          <main className="px-4 pb-16 pt-5 sm:px-6 sm:pt-6 lg:px-8" id="main">
+        <div className={clsx(ready && 'transition-[padding] duration-200', collapsed ? 'lg:pl-[56px]' : 'lg:pl-[200px]')} style={{ paddingTop: top + 56 }}>
+          <main className="px-4 pb-16 pt-5 sm:px-5 sm:pt-6" id="main">
             <motion.div key={path.split('/').slice(0, 3).join('/')} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.14, ease: 'easeOut' }}>{children}</motion.div>
           </main>
         </div>
