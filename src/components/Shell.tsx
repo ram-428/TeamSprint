@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  LayoutDashboard, FolderKanban, Search, Bell, Plus, Sun, Moon, Contrast, LogOut, Settings, Target, Gauge, ShieldCheck, Building2, ChevronsLeft, ChevronsRight,
-  Command, Filter, Eye, X, UserCircle2, Menu, HelpCircle,
+  LayoutDashboard, FolderKanban, Search, Bell, Plus, Sun, Moon, Contrast, LogOut, Settings, Target, Gauge, ShieldCheck, Building2, PanelLeft,
+  Command, Filter, Eye, X, UserCircle2, HelpCircle,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { Logo } from './Logo';
@@ -83,21 +83,15 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   const exitImpersonation = async () => { try { await api('/api/admin/platform/impersonate', { method: 'DELETE' }); window.location.href = '/admin/platform'; } catch (e) { toast.error(errMsg(e)); } };
   const logout = async () => { await api('/api/auth/logout', { method: 'POST', body: {} }); window.location.href = '/login'; };
 
-  const sidebar = (
-    <div className="flex h-full flex-col">
-      <div className={clsx('flex pt-4', collapsed ? 'flex-col items-center gap-2' : 'items-center gap-2 px-4')}>
-        <Link href="/dashboard" className={collapsed ? '' : 'block min-w-0 flex-1'}>{collapsed ? <Logo text={false} size={44} /> : <Logo variant="sidebar" />}</Link>
-        <button onClick={toggleCollapse} className="btn btn-ghost btn-icon hidden shrink-0 lg:inline-flex" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={`${collapsed ? 'Expand' : 'Collapse'} sidebar ([)`}>{collapsed ? <ChevronsRight size={17} /> : <ChevronsLeft size={17} />}</button>
-      </div>
-      <button onClick={() => setCreate(true)} disabled={me.role === 'guest'} className={clsx('btn btn-primary mx-4 mt-5', collapsed && '!mx-3 !px-0')} title="Create issue (C)"><Plus size={17} />{!collapsed && 'Create'}</button>
-      <nav className="mt-5 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-4 pb-4" aria-label="Main">
-        {nav.map((n) => <NavLink key={n.href} n={n} path={path} collapsed={collapsed} />)}
-        {admin.length > 0 && <div className="my-3 border-t border-[var(--border)]" />}
-        {admin.length > 0 && !collapsed && <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-faint">Administration</div>}
-        {admin.map((n) => <NavLink key={n.href} n={n} path={path} collapsed={collapsed} />)}
-      </nav>
-    </div>
+  // `narrow` = icon-only rail (collapsed desktop sidebar); the mobile drawer always shows labels
+  const sidebar = (narrow: boolean) => (
+    <nav className={clsx('flex h-full flex-col gap-0.5 overflow-y-auto py-3', narrow ? 'px-2' : 'px-3')} aria-label="Main">
+      {nav.map((n) => <NavLink key={n.href} n={n} path={path} collapsed={narrow} />)}
+      {admin.length > 0 && (narrow ? <div className="mx-1 my-2 border-t border-[var(--border)]" /> : <div className="px-2.5 pb-1 pt-4 text-[12px] font-semibold text-faint">Administration</div>)}
+      {admin.map((n) => <NavLink key={n.href} n={n} path={path} collapsed={narrow} />)}
+    </nav>
   );
+  const top = me.impersonatedBy ? 40 : 0; // impersonation banner height
 
   return (
     <UserProvider value={me}>
@@ -107,34 +101,28 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
           <button onClick={exitImpersonation} className="rounded-lg bg-black/80 px-3 py-1 text-white hover:bg-black">Exit</button>
         </motion.div>
       )}
-      <div className={clsx('min-h-screen', me.impersonatedBy && 'pt-10')}>
-        {/* desktop sidebar */}
-        <motion.aside animate={{ width: collapsed ? 84 : 248 }} transition={ready ? { type: 'spring', stiffness: 360, damping: 36 } : { duration: 0 }} className={clsx('glass fixed bottom-3 left-3 z-40 hidden overflow-hidden rounded-[24px] lg:block', me.impersonatedBy ? 'top-[52px]' : 'top-3')}>{sidebar}</motion.aside>
-        {/* mobile drawer */}
-        <AnimatePresence>
-          {mobile && (
-            <div className="fixed inset-0 z-[60] lg:hidden">
-              <motion.div className="absolute inset-0 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobile(false)} />
-              <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: 'spring', stiffness: 360, damping: 36 }} className="glass-solid absolute bottom-2 left-2 top-2 w-[260px] rounded-3xl">{sidebar}</motion.aside>
+      <div className="min-h-screen">
+        {/* top navigation bar: full width, like a work-management app header */}
+        <header className="fixed inset-x-0 z-40 border-b border-[var(--border)] bg-[var(--surface-solid)]" style={{ top }}>
+          <div className="flex h-14 items-center gap-1.5 px-2 sm:gap-2 sm:px-3">
+            {/* visibility lives on wrappers: the .btn rule would otherwise override Tailwind's hidden/flex utilities */}
+            <span className="shrink-0 lg:hidden"><button className="btn btn-ghost btn-icon" aria-label="Open menu" title="Open menu" onClick={() => setMobile(true)}><PanelLeft size={18} /></button></span>
+            <span className="hidden shrink-0 lg:block"><button className="btn btn-ghost btn-icon" onClick={toggleCollapse} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={`${collapsed ? 'Expand' : 'Collapse'} sidebar ([)`}><PanelLeft size={18} /></button></span>
+            <Link href="/dashboard" className="flex shrink-0 items-center gap-2 rounded-[3px] px-1.5 py-1 hover:bg-[var(--surface-2)]" aria-label="Team Sprint home">
+              <Logo text={false} size={26} /><span className="hidden text-[16px] font-semibold tracking-tight sm:inline">Team Sprint</span>
+            </Link>
+            <div className="mx-auto flex min-w-0 flex-1 items-center justify-center gap-2 px-1 sm:px-4">
+              <button onClick={() => setPalette(true)} className="flex h-9 min-w-0 flex-1 items-center gap-2.5 rounded-[6px] border border-[var(--border-strong)] bg-[var(--surface)] px-3 text-left text-faint transition-colors hover:bg-[var(--surface-2)] md:max-w-[560px]" aria-label="Search">
+                <Search size={16} className="shrink-0" /><span className="flex-1 truncate text-[14px]">Search</span><kbd className="hidden sm:inline"><Command size={10} className="inline" /> K</kbd>
+              </button>
+              <button onClick={() => setCreate(true)} disabled={me.role === 'guest'} className="btn btn-primary shrink-0 !h-9 !px-3 sm:!px-4" title="Create issue (C)" aria-label="Create"><Plus size={17} /><span className="hidden sm:inline">Create</span></button>
             </div>
-          )}
-        </AnimatePresence>
-
-        <div className={clsx(ready && 'transition-[padding] duration-300', collapsed ? 'lg:pl-[108px]' : 'lg:pl-[272px]')}>
-          <header className="sticky top-0 z-30 px-3 pt-3 sm:px-4 lg:pr-5">
-            <div className="glass flex h-[58px] items-center gap-2 rounded-[20px] px-2 sm:gap-3 sm:px-3">
-              <button className="btn btn-ghost btn-icon shrink-0 lg:hidden" aria-label="Open menu" title="Open menu" onClick={() => setMobile(true)}>
-                <Menu size={19} />
-              </button>
-              <button onClick={() => setPalette(true)} className="flex h-10 min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 text-left text-faint transition-colors hover:border-[var(--border-strong)] sm:max-w-[520px]" aria-label="Search">
-                <Search size={16} /><span className="flex-1 truncate text-[13.5px]">Search issues, projects, people…</span><kbd className="hidden sm:inline"><Command size={10} className="inline" /> K</kbd>
-              </button>
-              {me.platformRole === 'super_admin' && !me.impersonatedBy && <OrgSwitcher me={me} path={path} />}
-              <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1.5">
-                <button className="btn btn-ghost btn-icon hidden sm:inline-flex" aria-label="Keyboard shortcuts" onClick={() => setHelp(true)}><HelpCircle size={18} /></button>
+            {me.platformRole === 'super_admin' && !me.impersonatedBy && <OrgSwitcher me={me} path={path} />}
+            <div className="flex shrink-0 items-center gap-0.5">
+                <span className="hidden sm:block"><button className="btn btn-ghost btn-icon" aria-label="Keyboard shortcuts" onClick={() => setHelp(true)}><HelpCircle size={18} /></button></span>
                 <button className="btn btn-ghost btn-icon" aria-label="Toggle theme" onClick={toggleTheme}><AnimatePresence mode="wait" initial={false}><motion.span key={theme} initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.18 }}>{theme === 'dark' ? <Sun size={18} /> : theme === 'light' ? <Contrast size={18} /> : <Moon size={18} />}</motion.span></AnimatePresence></button>
                 <Bell2 />
-                <Dropdown trigger={({ toggle }) => <button onClick={toggle} className="ml-1 flex items-center gap-2 rounded-xl p-1 pr-2 transition-colors hover:bg-[var(--surface-2)]" aria-label="Account menu"><Avatar user={me} size={32} /></button>}>
+                <Dropdown trigger={({ toggle }) => <button onClick={toggle} className="ml-1 flex items-center rounded-full p-0.5 transition-colors hover:bg-[var(--surface-2)]" aria-label="Account menu"><Avatar user={me} size={28} /></button>}>
                   {(close) => (
                     <div className="w-60">
                       <div className="flex items-center gap-3 border-b border-[var(--border)] px-3 pb-3 pt-2"><Avatar user={me} size={38} /><div className="min-w-0"><div className="truncate font-semibold">{me.name}</div><div className="truncate text-xs text-muted">{me.email}</div>{me.orgName && <div className="mt-0.5 truncate text-[11px] text-faint">{me.orgName}</div>}</div></div>
@@ -146,11 +134,28 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
                     </div>
                   )}
                 </Dropdown>
-              </div>
             </div>
-          </header>
-          <main className="px-3 pb-16 pt-5 sm:px-4 sm:pt-6 lg:pr-5" id="main">
-            <motion.div key={path.split('/').slice(0, 3).join('/')} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.16, ease: 'easeOut' }}>{children}</motion.div>
+          </div>
+        </header>
+
+        {/* desktop sidebar: flush left, below the header */}
+        <aside className={clsx('fixed bottom-0 left-0 z-30 hidden border-r border-[var(--border)] bg-[var(--surface-solid)] lg:block', ready && 'transition-[width] duration-200', collapsed ? 'w-[56px]' : 'w-[240px]')} style={{ top: top + 56 }}>{sidebar(collapsed)}</aside>
+        {/* mobile drawer */}
+        <AnimatePresence>
+          {mobile && (
+            <div className="fixed inset-0 z-[60] lg:hidden">
+              <motion.div className="absolute inset-0 bg-[rgba(9,30,66,0.54)]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobile(false)} />
+              <motion.aside initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }} transition={{ type: 'spring', stiffness: 360, damping: 36 }} className="absolute bottom-0 left-0 top-0 flex w-[260px] flex-col border-r border-[var(--border)] bg-[var(--surface-solid)]">
+                <div className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--border)] px-3"><Logo text={false} size={26} /><span className="text-[16px] font-semibold">Team Sprint</span></div>
+                <div className="min-h-0 flex-1">{sidebar(false)}</div>
+              </motion.aside>
+            </div>
+          )}
+        </AnimatePresence>
+
+        <div className={clsx(ready && 'transition-[padding] duration-200', collapsed ? 'lg:pl-[56px]' : 'lg:pl-[240px]')} style={{ paddingTop: top + 56 }}>
+          <main className="px-4 pb-16 pt-5 sm:px-6 sm:pt-6 lg:px-8" id="main">
+            <motion.div key={path.split('/').slice(0, 3).join('/')} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.14, ease: 'easeOut' }}>{children}</motion.div>
           </main>
         </div>
       </div>
@@ -165,12 +170,13 @@ function NavLink({ n, path, collapsed }: { n: NavItem; path: string; collapsed: 
   const active = path === n.href || path.startsWith((n.match || n.href) + '/') || (n.match && path === n.match);
   const unread = useUnread(n.href === '/notifications');
   return (
-    <Link href={n.href} title={collapsed ? n.label : undefined} className={clsx('group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-medium transition-colors', active ? 'text-text' : 'text-muted hover:text-text')}>
-      {active && <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-xl border border-[var(--border-strong)] bg-[var(--surface-2)] shadow-[0_6px_22px_-10px_rgba(124,92,255,.7)]" transition={{ type: 'spring', stiffness: 420, damping: 34 }} />}
-      {active && <motion.span layoutId="nav-bar" className="absolute -left-3 top-2.5 h-5 w-1 rounded-full grad-bar" />}
-      <n.icon size={18} className={clsx('relative shrink-0 transition-transform group-hover:scale-110', active && 'text-accent2')} />
-      {!collapsed && <span className="relative">{n.label}</span>}
-      {unread > 0 && <span className={clsx('relative ml-auto rounded-full bg-accent px-1.5 text-[10.5px] font-bold text-white', collapsed && 'absolute right-1 top-1')}>{unread}</span>}
+    <Link href={n.href} title={collapsed ? n.label : undefined} aria-current={active ? 'page' : undefined}
+      className={clsx('relative flex h-9 items-center gap-3 rounded-[3px] text-[14px] font-medium transition-colors', collapsed ? 'justify-center px-0' : 'px-2.5',
+        active ? 'bg-[var(--accent-soft)] text-accent' : 'text-muted hover:bg-[var(--surface-2)] hover:text-text')}>
+      {active && <span className="absolute bottom-1.5 left-0 top-1.5 w-[3px] rounded-r-[2px] bg-[var(--accent)]" aria-hidden />}
+      <n.icon size={18} className="shrink-0" />
+      {!collapsed && <span className="truncate">{n.label}</span>}
+      {unread > 0 && <span className={clsx('rounded-[3px] bg-[var(--danger)] px-1.5 text-[11px] font-bold leading-[18px] text-white', collapsed ? 'absolute right-0.5 top-0.5 !px-1 !text-[10px] !leading-[15px]' : 'ml-auto')}>{unread}</span>}
     </Link>
   );
 }
@@ -188,7 +194,7 @@ function Bell2() {
     <Dropdown trigger={({ toggle }) => (
       <button onClick={toggle} className="btn btn-ghost btn-icon relative" aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`}>
         <Bell size={18} />
-        <AnimatePresence>{unread > 0 && <motion.span key={unread} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white shadow-[0_0_12px_var(--accent)]">{unread}</motion.span>}</AnimatePresence>
+        <AnimatePresence>{unread > 0 && <motion.span key={unread} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-[3px] bg-[var(--danger)] px-1 text-[10px] font-bold text-white">{unread}</motion.span>}</AnimatePresence>
       </button>
     )}>
       {(close) => (
