@@ -66,7 +66,7 @@ export default function ProjectsPage() {
               );
             })}
           </motion.div>
-          <Card className="mt-3"><Pagination {...pg.bar} /></Card></>
+          <Pagination {...pg.bar} className="mt-3 !border-t-0 !px-1 !py-1" /></>
         ) : (
           <Card className="overflow-hidden"><table className="w-full text-left text-[13.5px]"><thead className="border-b border-[var(--border)] text-xs uppercase tracking-wider text-muted"><tr><th className="p-4">Name</th><th>Key</th><th>Type</th><th>Lead</th><th>Progress</th><th /></tr></thead>
             <tbody>{pg.rows.map((p) => <tr key={p._id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"><td className="p-4"><Link href={`/projects/${p.key}/board`} className="flex items-center gap-2.5 font-semibold"><span className="h-3 w-3 rounded" style={{ background: p.color }} />{p.name}</Link></td><td className="key">{p.key}</td><td>{TYPE_LABEL[p.type]}</td><td><div className="flex items-center gap-2"><Avatar user={p.lead} size={22} />{p.lead?.name}</div></td><td className="w-48"><ProgressBar value={p.total ? (p.done / p.total) * 100 : 0} color={p.color} /></td><td><button onClick={(e) => star(p, e)} aria-label="Star"><Star size={15} className={p.starred ? 'fill-[var(--warning)] text-warning' : 'text-faint'} /></button></td></tr>)}</tbody></table><Pagination {...pg.bar} /></Card>
