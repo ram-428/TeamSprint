@@ -50,7 +50,7 @@ function Section({ id, title, sub, keys, children, header, collapsed }: { id: st
 }
 
 export default function BacklogPage({ params }: { params: Promise<{ key: string }> }) {
-  const { key } = use(params); const { project } = useProject(); const ab = project.abilities;
+  const { key } = use(params); const { project, assignees } = useProject(); const ab = project.abilities;
   const router = useRouter(); const path = usePathname(); const sp = useSearchParams(); const selected = sp.get('selected');
   const { data, mutate, loading } = useApi<{ items: any[] }>(`/api/issues?project=${key}`);
   const { data: sprints, reload: reloadSprints, loading: sl } = useApi<any[]>(`/api/projects/${key}/sprints`);
@@ -65,7 +65,7 @@ export default function BacklogPage({ params }: { params: Promise<{ key: string 
   const planning = useMemo(() => (sprints || []).filter((s) => s.state !== 'closed'), [sprints]);
   const items = useMemo(() => all.filter((i) => i.type !== 'epic' && i.type !== 'subtask' && i.statusCategory !== 'done' || (i.type !== 'epic' && i.type !== 'subtask' && planning.some((s) => String(s._id) === String(i.sprintId)))), [all, planning]);
   const byKey = useMemo(() => new Map(items.map((i) => [i.key, i])), [items]);
-  const match = (i: any) => (!q || (i.summary + i.key).toLowerCase().includes(q.toLowerCase())) && (!epicF || i.epicId === epicF);
+  const match = (i: any) => (!q || (i.summary + i.key).toLowerCase().includes(q.toLowerCase())) && (!epicF || i.epicId === epicF) && (!assignees.length || assignees.includes(String(i.assigneeId)));
 
   const build = () => {
     const m: Record<string, string[]> = { backlog: [] };

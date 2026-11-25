@@ -10,13 +10,13 @@ import { IssueDrawer } from '@/components/issue/IssueDrawer';
 import { CreateIssueModal } from '@/components/issue/CreateIssueModal';
 
 export default function ListPage({ params }: { params: Promise<{ key: string }> }) {
-  const { key } = use(params); const { project } = useProject(); const ab = project.abilities;
+  const { key } = use(params); const { project, assignees } = useProject(); const ab = project.abilities;
   const router = useRouter(); const path = usePathname(); const sp = useSearchParams(); const selected = sp.get('selected');
   const { data, loading, mutate } = useApi<{ items: any[] }>(`/api/issues?project=${key}`);
   const { data: users } = useApi<any[]>(`/api/users?project=${key}`);
   const { data: masters } = useApi<{ types: { key: string; name: string }[] }>('/api/masters');
   const [q, setQ] = useState(''); const [type, setType] = useState(''); const [cat, setCat] = useState<'all' | 'todo' | 'inprogress' | 'done'>('all'); const [create, setCreate] = useState(false);
-  const items = useMemo(() => (data?.items || []).filter((i) => (!q || (i.summary + i.key).toLowerCase().includes(q.toLowerCase())) && (!type || i.type === type) && (cat === 'all' || i.statusCategory === cat)), [data, q, type, cat]);
+  const items = useMemo(() => (data?.items || []).filter((i) => (!q || (i.summary + i.key).toLowerCase().includes(q.toLowerCase())) && (!type || i.type === type) && (cat === 'all' || i.statusCategory === cat) && (!assignees.length || assignees.includes(String(i.assigneeId)))), [data, q, type, cat, assignees]);
   const setSel = (k: string | null) => { const p = new URLSearchParams(sp.toString()); k ? p.set('selected', k) : p.delete('selected'); router.replace(`${path}?${p}`, { scroll: false }); };
   const count = (c: string) => (data?.items || []).filter((i) => i.statusCategory === c).length;
   return (
