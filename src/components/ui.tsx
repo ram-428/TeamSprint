@@ -60,7 +60,7 @@ export function PriorityIcon({ priority, withLabel }: { priority: string; withLa
 const STATUS_NAMES: Record<string, string> = { ...Object.fromEntries(STATUSES.map((s) => [s.id, s.name])), review: 'In Review', qa: 'QA', customer: 'Waiting for customer' };
 /** Human label for a status id (falls back to the project's own names, then a capitalised id). */
 export function statusName(id: string, project?: { statuses: { id: string; name: string }[] }) {
-  const n = project?.statuses.find((x) => x.id === id)?.name ?? STATUS_NAMES[id] ?? id;
+  const n = project?.statuses.find((x) => x.id === id)?.name ?? STATUS_NAMES[id] ?? id.replace(/_/g, ' ');
   return n.charAt(0).toUpperCase() + n.slice(1);
 }
 export function StatusChip({ project, status, category, small }: { project?: { statuses: { id: string; name: string; color: string }[] }; status: string; category?: string; small?: boolean }) {

@@ -6,6 +6,7 @@ import type { AuthUser } from './auth';
 
 import { STATUSES, type StatusDef } from '../lib/statuses';
 import { ensureProjectStatuses } from './migrate';
+import { applyMasters, activeTypeKeys } from './masters';
 export { STATUSES, type StatusDef };
 
 /** Every project type now uses the same shared status set. */
@@ -20,7 +21,13 @@ export async function loadProject(user: AuthUser, key: string): Promise<any> {
   const p = await Project.findOne(filter).lean<any>();
   if (!p || !can(user, 'project.view', p)) throw notFound('Project not found');
   await ensureProjectStatuses(p); // a project still on an old status list is converted the first time it's opened
-  return p;
+  return applyMasters(p); // the org's Status master decides the columns/choices
+}
+
+/** Rejects an issue type that is not (or no longer) in the organization's Issue Type master. An issue may keep a retired type it already has. */
+async function assertIssueType(orgId: any, type: string, current?: string) {
+  if (type === current) return;
+  if (!(await activeTypeKeys(orgId)).includes(type)) throw new AppError(400, 'BAD_TYPE', 'This issue type is not available. Ask your admin to enable it.', { type: 'Not an available issue type' });
 }
 
 export function requirePerm(user: AuthUser, perm: string, p: ProjectLike, owns = false) {
@@ -35,6 +42,7 @@ export async function loadIssue(user: AuthUser, key: string) {
   if (!project || !can(user, 'project.view', project)) throw notFound('Issue not found');
   // Convert a project still on an old status list, then reload the issue so it carries its new status.
   if (await ensureProjectStatuses(project)) { issue = await find(); if (!issue) throw notFound('Issue not found'); }
+  await applyMasters(project);
   return { issue, project };
 }
 
@@ -58,6 +66,7 @@ export async function applyIssueUpdate(user: AuthUser, issue: any, project: any,
     issue.resolvedAt = st.category === 'done' ? new Date() : undefined;
     issue.resolution = st.category === 'done' ? patch.resolution || (st.id === 'cancelled' ? "Won't Do" : 'Done') : undefined;
   }
+  if (patch.type) await assertIssueType(project.orgId, patch.type, issue.type);
   const simple = ['summary', 'description', 'priority', 'type', 'points', 'dueDate', 'startDate', 'labels', 'components', 'fixVersion', 'flagged', 'estimate'] as const;
   for (const f of simple) if (f in patch) issue[f] = patch[f] === '' ? undefined : patch[f];
   if ('assigneeId' in patch) {
@@ -111,6 +120,7 @@ export async function runAutomation(project: any, issue: any, trigger: string, u
 
 export async function createIssue(user: AuthUser, project: any, data: Record<string, any>) {
   requirePerm(user, 'issue.create', project);
+  await assertIssueType(project.orgId, data.type || 'task');
   const p = await Project.findOneAndUpdate({ _id: project._id }, { $inc: { issueCounter: 1 } }, { new: true }).lean<any>();
   const number = p.issueCounter;
   const first = (data.status && project.statuses.find((s: any) => s.id === data.status)) || project.statuses[0];

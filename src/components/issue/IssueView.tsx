@@ -12,7 +12,6 @@ import { useMe } from '../UserContext';
 import { AttachmentGallery, AttachmentPicker } from '../Attachments';
 
 const PRIOS = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
-const TYPES = ['epic', 'story', 'task', 'bug', 'subtask'];
 
 export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; onClose?: () => void; embedded?: boolean }) {
   const me = useMe(); const router = useRouter();
@@ -21,6 +20,7 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
   const { data: users } = useApi<any[]>(pk ? `/api/users?project=${pk}` : null);
   const { data: sprints } = useApi<any[]>(pk && data?.project?.type === 'scrum' ? `/api/projects/${pk}/sprints` : null);
   const { data: epics } = useApi<{ items: any[] }>(pk ? `/api/issues?project=${pk}&type=epic` : null);
+  const { data: masters } = useApi<{ types: { key: string; name: string }[] }>('/api/masters');
   const [tab, setTab] = useState<'comments' | 'history' | 'work'>('comments');
   const [confirmDel, setConfirmDel] = useState(false);
 
@@ -47,7 +47,9 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
   </>;
   const reporterField = <div className="flex h-9 items-center gap-2"><Avatar user={issue.reporter} size={24} /><span className="truncate">{issue.reporter?.name || '—'}</span></div>;
   const priorityField = canEdit ? <Select aria-label="Priority" className="!h-9" value={issue.priority} onChange={(v) => patch({ priority: v })} options={PRIOS.map((p) => ({ value: p, label: p }))} /> : <PriorityIcon priority={issue.priority} withLabel />;
-  const typeField = canEdit && issue.type !== 'subtask' ? <Select aria-label="Type" className="!h-9" value={issue.type} onChange={(v) => patch({ type: v })} options={TYPES.filter((t) => t !== 'subtask').map((t) => ({ value: t, label: t[0].toUpperCase() + t.slice(1) }))} /> : <span className="capitalize">{issue.type}</span>;
+  const typeName = (k: string) => masters?.types.find((t) => t.key === k)?.name ?? k[0].toUpperCase() + k.slice(1);
+  const typeOptions = (() => { const o = (masters?.types || []).filter((t) => t.key !== 'subtask').map((t) => ({ value: t.key, label: t.name })); return o.some((x) => x.value === issue.type) ? o : [{ value: issue.type, label: typeName(issue.type) }, ...o]; })();
+  const typeField = canEdit && issue.type !== 'subtask' ? <Select aria-label="Type" className="!h-9" value={issue.type} onChange={(v) => patch({ type: v })} options={typeOptions} /> : <span>{typeName(issue.type)}</span>;
   const sprintField = data.project.type === 'scrum' ? (canEdit ? <Select aria-label="Sprint" className="!h-9" value={issue.sprintId || ''} onChange={(v) => patch({ sprintId: v || null })} options={[{ value: '', label: 'Backlog' }, ...(sprints || []).filter((s) => s.state !== 'closed' || s._id === issue.sprintId).map((s) => ({ value: s._id, label: s.name }))]} /> : <span>{data.sprint?.name || 'Backlog'}</span>) : null;
   const epicField = issue.type !== 'epic' && (epics?.items?.length ?? 0) > 0 ? (canEdit ? <Select aria-label="Epic" className="!h-9" value={issue.epicId || ''} onChange={(v) => patch({ epicId: v || null })} options={[{ value: '', label: 'None' }, ...(epics?.items || []).map((e) => ({ value: e._id, label: `${e.key} · ${e.summary}`.slice(0, 40) }))]} /> : <span>{data.epic?.key || 'None'}</span>) : null;
   const dueField = <>
