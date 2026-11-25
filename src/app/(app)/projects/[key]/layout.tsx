@@ -1,5 +1,5 @@
 'use client';
-import { use, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSelectedLayoutSegment } from 'next/navigation';
 import { KanbanSquare, ListTodo, Table2, GanttChartSquare, BarChart3, Settings2, Zap, Layers, Star, Lock, UserPlus, Users } from 'lucide-react';
@@ -15,17 +15,16 @@ export default function ProjectLayout({ children, params }: { children: React.Re
   const { key } = use(params); const activeTab = useSelectedLayoutSegment();
   const { data: project, error, reload, mutate } = useApi<any>(`/api/projects/${key}`);
   const [membersOpen, setMembersOpen] = useState(false);
-  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
+  // Member avatars in the header double as a multi-select assignee filter for the board, backlog and issue list.
+  const [assignees, setAssignees] = useState<string[]>([]);
+  useEffect(() => { setAssignees([]); }, [key]);
+  const toggleAssignee = (id: string) => setAssignees((a) => (a.includes(id) ? a.filter((x) => x !== id) : [...a, id]));
+  const clearAssignees = () => setAssignees([]);
   if (error) return <ErrorState message={error.status === 404 ? 'Project not found, or you do not have access.' : (error as ErrorLike).message} onRetry={reload} />;
   if (!project) return <div className="mx-auto max-w-[1500px] space-y-4"><Skeleton className="h-12 w-1/3" /><Skeleton className="h-10 w-2/3" /><Skeleton className="h-[480px]" /></div>;
   const ab = project.abilities;
-  const hasAssigneeFilter = activeTab === 'board' || activeTab === 'backlog';
-  const members = (project.members as ProjectMember[]).filter((member) => member._id);
-  const assigneeIds = selectedAssignees.filter((id) => members.some((member) => member._id === id));
-
-  function toggleAssignee(id: string) {
-    setSelectedAssignees((ids) => ids.includes(id) ? ids.filter((selectedId) => selectedId !== id) : [...ids, id]);
-  }
+  const hasAssigneeFilter = activeTab === 'board' || activeTab === 'backlog' || activeTab === 'list';
+  const members = (project.members as ProjectMember[]).filter((m) => m._id);
   const tabs = [
     { slug: 'board', label: project.type === 'scrum' ? 'Active sprint' : 'Board', icon: KanbanSquare },
     ...(project.type === 'scrum' ? [{ slug: 'backlog', label: 'Backlog', icon: ListTodo }] : []),
@@ -36,7 +35,7 @@ export default function ProjectLayout({ children, params }: { children: React.Re
     { slug: 'settings', label: 'Settings', icon: Settings2 },
   ];
   return (
-    <ProjectProvider value={{ project, reload, mutate, assigneeIds }}>
+    <ProjectProvider value={{ project, reload, mutate, assignees, toggleAssignee, clearAssignees }}>
       <div className="mx-auto max-w-[1600px]">
         {/* breadcrumb */}
         <nav aria-label="Breadcrumb" className="mb-1.5 flex min-w-0 items-center gap-1.5 text-[14px] text-muted">
@@ -54,7 +53,7 @@ export default function ProjectLayout({ children, params }: { children: React.Re
           <div className="flex flex-wrap items-center gap-2">
             <span className="hidden items-center gap-x-2 text-[12.5px] text-muted md:flex"><span className="key font-semibold">{project.key}</span><span>·</span><span className="capitalize">{project.type.replace('_', ' ')}</span><span>·</span><button className="inline-flex items-center gap-1 hover:text-text hover:underline" onClick={() => setMembersOpen(true)}><Layers size={12} />{project.members.length} {project.members.length === 1 ? 'member' : 'members'}</button>{ab.role === 'viewer' && <span className="chip !h-5 !text-[10px]">read-only</span>}</span>
             {hasAssigneeFilter
-              ? <ProjectAssigneeFilter members={members} selectedIds={assigneeIds} onToggle={toggleAssignee} />
+              ? <ProjectAssigneeFilter members={members} selectedIds={assignees} onToggle={toggleAssignee} onClear={clearAssignees} />
               : <button aria-label="View project members" title="Project members" className="rounded-full" onClick={() => setMembersOpen(true)}><AvatarStack users={project.members} max={5} size={28} /></button>}
             {ab['project.manage_members']
               ? <button className="btn btn-sm" onClick={() => setMembersOpen(true)}><UserPlus size={15} /> Add member</button>

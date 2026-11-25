@@ -51,7 +51,7 @@ function Section({ id, title, sub, keys, children, header, collapsed }: { id: st
 }
 
 export default function BacklogPage({ params }: { params: Promise<{ key: string }> }) {
-  const { key } = use(params); const { project, assigneeIds } = useProject(); const ab = project.abilities;
+  const { key } = use(params); const { project, assignees } = useProject(); const ab = project.abilities;
   const router = useRouter(); const path = usePathname(); const sp = useSearchParams(); const selected = sp.get('selected');
   const { data, mutate, loading } = useApi<{ items: any[] }>(`/api/issues?project=${key}`);
   const { data: sprints, reload: reloadSprints, loading: sl } = useApi<any[]>(`/api/projects/${key}/sprints`);
@@ -66,12 +66,7 @@ export default function BacklogPage({ params }: { params: Promise<{ key: string 
   const planning = useMemo(() => (sprints || []).filter((s) => s.state !== 'closed'), [sprints]);
   const items = useMemo(() => all.filter((i) => i.type !== 'epic' && i.type !== 'subtask' && i.statusCategory !== 'done' || (i.type !== 'epic' && i.type !== 'subtask' && planning.some((s) => String(s._id) === String(i.sprintId)))), [all, planning]);
   const byKey = useMemo(() => new Map(items.map((i) => [i.key, i])), [items]);
-  const hasFilters = Boolean(q || epicF || assigneeIds.length);
-  const visibleKeys = (keys: string[] = []) => keys.filter((key) => {
-    const issue = byKey.get(key);
-    return issue && (!q || (issue.summary + issue.key).toLowerCase().includes(q.toLowerCase()))
-      && (!epicF || issue.epicId === epicF) && (!assigneeIds.length || assigneeIds.includes(issue.assigneeId));
-  });
+  const match = (i: any) => (!q || (i.summary + i.key).toLowerCase().includes(q.toLowerCase())) && (!epicF || i.epicId === epicF) && (!assignees.length || assignees.includes(String(i.assigneeId)));
 
   const build = () => {
     const m: Record<string, string[]> = { backlog: [] };
@@ -148,6 +143,8 @@ export default function BacklogPage({ params }: { params: Promise<{ key: string 
   }
 
   const activeIssue = active ? byKey.get(active) : null;
+  const hasFilters = !!q || !!epicF || assignees.length > 0;
+  const visibleKeys = (ks: string[] = []) => ks.filter((k) => { const i = byKey.get(k); return !!i && match(i); });
   const backlogKeys = visibleKeys(secs.backlog);
   const noMatches = 'No issues match the current filters';
 

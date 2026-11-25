@@ -3,30 +3,36 @@ import { Avatar, Dropdown } from '@/components/ui';
 
 export type ProjectMember = { _id: string; name: string; color?: string; avatarUrl?: string };
 
-export function ProjectAssigneeFilter({ members, selectedIds, onToggle }: {
+/** Header avatars that double as a multi-select assignee filter. First 5 members are inline, the rest live in a "+N" dropdown. */
+export function ProjectAssigneeFilter({ members, selectedIds, onToggle, onClear }: {
   members: ProjectMember[];
   selectedIds: readonly string[];
   onToggle: (id: string) => void;
+  onClear?: () => void;
 }) {
   const shown = members.slice(0, 5);
   const overflow = members.slice(5);
   const selectedInOverflow = overflow.filter((member) => selectedIds.includes(member._id)).length;
+  const anySelected = selectedIds.length > 0;
 
   return (
-    <div role="group" aria-label="Filter issues by assignee" className="flex items-center gap-1">
-      {shown.map((member) => (
-        <button key={member._id} type="button" aria-label={`Filter by ${member.name}`} title={member.name}
-          aria-pressed={selectedIds.includes(member._id)} onClick={() => onToggle(member._id)}
-          className="inline-flex rounded-full transition-opacity aria-pressed:ring-2 aria-pressed:ring-[var(--accent)] hover:opacity-80">
-          <Avatar user={member} size={28} />
-        </button>
-      ))}
+    <div role="group" aria-label="Filter issues by assignee" className="flex items-center">
+      {shown.map((member, i) => {
+        const on = selectedIds.includes(member._id); const dim = anySelected && !on;
+        return (
+          <button key={member._id} type="button" aria-label={`${on ? 'Remove filter' : 'Show only issues of'} ${member.name}`} title={`${member.name}${on ? ' (filtered)' : ''}`}
+            aria-pressed={on} onClick={() => onToggle(member._id)} style={{ marginLeft: i ? -8 : 0 }}
+            className={clsx('relative inline-flex rounded-full transition hover:z-10 hover:-translate-y-0.5', on ? 'z-[5] ring-2 ring-[var(--accent)]' : dim ? 'opacity-40 hover:opacity-100' : '')}>
+            <Avatar user={member} size={28} ring />
+          </button>
+        );
+      })}
       {overflow.length > 0 && (
         <Dropdown trigger={({ open, toggle }) => (
-          <button type="button" aria-expanded={open}
+          <button type="button" aria-expanded={open} style={{ marginLeft: -8 }}
             aria-label={`Filter by more assignees${selectedInOverflow ? ` (${selectedInOverflow} selected)` : ''}`}
             title="More assignees" onClick={toggle}
-            className={clsx('inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[var(--border)] bg-surface-2 px-1 text-[11px] font-semibold text-muted', selectedInOverflow > 0 && 'ring-2 ring-[var(--accent)]')}>
+            className={clsx('relative inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[var(--border)] bg-surface-2 px-1 text-[10px] font-semibold text-muted', selectedInOverflow > 0 && 'ring-2 ring-[var(--accent)]')}>
             +{overflow.length}
           </button>
         )}>
@@ -43,6 +49,7 @@ export function ProjectAssigneeFilter({ members, selectedIds, onToggle }: {
           )}
         </Dropdown>
       )}
+      {anySelected && onClear && <button type="button" className="ml-2 text-xs font-semibold text-accent2 hover:underline" onClick={onClear}>Clear ({selectedIds.length})</button>}
     </div>
   );
 }
