@@ -10,6 +10,7 @@ import { Avatar, ConfirmDialog, Dropdown, MenuItem, PriorityIcon, ProgressBar, S
 import { mdToHtml } from '@/lib/md';
 import { useMe } from '../UserContext';
 import { AttachmentGallery, AttachmentPicker } from '../Attachments';
+import { TeamPicker, TeamIcon } from '../TeamPicker';
 
 const PRIOS = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
 
@@ -52,6 +53,9 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
   const typeField = canEdit && issue.type !== 'subtask' ? <Select aria-label="Type" className="!h-9" value={issue.type} onChange={(v) => patch({ type: v })} options={typeOptions} /> : <span>{typeName(issue.type)}</span>;
   const sprintField = data.project.type === 'scrum' ? (canEdit ? <Select aria-label="Sprint" className="!h-9" value={issue.sprintId || ''} onChange={(v) => patch({ sprintId: v || null })} options={[{ value: '', label: 'Backlog' }, ...(sprints || []).filter((s) => s.state !== 'closed' || s._id === issue.sprintId).map((s) => ({ value: s._id, label: s.name }))]} /> : <span>{data.sprint?.name || 'Backlog'}</span>) : null;
   const epicField = issue.type !== 'epic' && (epics?.items?.length ?? 0) > 0 ? (canEdit ? <Select aria-label="Epic" className="!h-9" value={issue.epicId || ''} onChange={(v) => patch({ epicId: v || null })} options={[{ value: '', label: 'None' }, ...(epics?.items || []).map((e) => ({ value: e._id, label: `${e.key} · ${e.summary}`.slice(0, 40) }))]} /> : <span>{data.epic?.key || 'None'}</span>) : null;
+  const teamField = canEdit
+    ? <TeamPicker compact value={issue.teamId || ''} onChange={(v) => patch({ teamId: v || null })} />
+    : issue.team ? <div className="flex h-9 items-center gap-2"><TeamIcon color={issue.team.color} size={22} /><span className="truncate">{issue.team.name}</span></div> : <span>None</span>;
   const dueField = <>
     {canEdit ? <input aria-label="Due date" type="date" className="input !h-9" value={issue.dueDate ? issue.dueDate.slice(0, 10) : ''} onChange={(e) => patch({ dueDate: e.target.value || null })} /> : <span>{issue.dueDate ? new Date(issue.dueDate).toLocaleDateString() : '—'}</span>}
     {issue.dueDate && new Date(issue.dueDate) < new Date() && issue.statusCategory !== 'done' && <div className="mt-1 text-xs font-semibold text-danger">Overdue</div>}
@@ -154,6 +158,7 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
               <Prop label="Story points" grid><InlineNumber value={issue.points} disabled={!canEdit} onSave={(v) => patch({ points: v })} /></Prop>
               {sprintField && <Prop label="Sprint" grid>{sprintField}</Prop>}
               {epicField && <Prop label="Epic" grid>{epicField}</Prop>}
+              <Prop label="Team" grid>{teamField}</Prop>
               <Prop label="Due date" grid>{dueField}</Prop>
               {project.versions?.length > 0 && <Prop label="Fix version" grid><span>{issue.fixVersion || '—'}</span></Prop>}
               {issue.slaDue && issue.statusCategory !== 'done' && <Prop label="SLA" grid><Sla due={issue.slaDue} /></Prop>}
@@ -179,6 +184,7 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
             <Prop label="Story points"><InlineNumber value={issue.points} disabled={!canEdit} onSave={(v) => patch({ points: v })} /></Prop>
             {sprintField && <Prop label="Sprint">{sprintField}</Prop>}
             {epicField && <Prop label="Epic">{epicField}</Prop>}
+            <Prop label="Team">{teamField}</Prop>
             <Prop label="Due date">{dueField}</Prop>
             <Prop label="Labels"><Labels value={issue.labels || []} disabled={!canEdit} onSave={(v) => patch({ labels: v })} /></Prop>
             {project.versions?.length > 0 && <Prop label="Fix version"><span>{issue.fixVersion || '—'}</span></Prop>}

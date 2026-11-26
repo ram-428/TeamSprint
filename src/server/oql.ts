@@ -124,6 +124,7 @@ export type Resolver = {
   user: (nameOrEmail: string) => Promise<string | null>;
   project: (keyOrName: string) => Promise<string | null>;
   sprint: (name: string) => Promise<string[]>;
+  team?: (name: string) => Promise<string | null>;
 };
 
 const FIELD: Record<string, string> = {
@@ -198,6 +199,13 @@ export async function compile(q: Query, r: Resolver): Promise<{ filter: Record<s
         else ids.push(...(await r.sprint(v.v)));
       }
       return op === '!=' || op === 'nin' ? { sprintId: { $nin: ids } } : { sprintId: { $in: ids.length ? ids : ['000000000000000000000000'] } };
+    }
+    if (f === 'team') {
+      if (op === 'empty') return { teamId: null };
+      if (op === 'notempty') return { teamId: { $ne: null } };
+      const ids: string[] = [];
+      for (const v of n.value) { const id = /^[a-f0-9]{24}$/.test(v.v) ? v.v : await r.team?.(v.v); if (id) ids.push(id); }
+      return op === '!=' || op === 'nin' ? { teamId: { $nin: ids } } : { teamId: { $in: ids.length ? ids : ['000000000000000000000000'] } };
     }
     if (f === 'statuscategory') {
       const m: Record<string, string> = { todo: 'todo', 'to do': 'todo', inprogress: 'inprogress', 'in progress': 'inprogress', done: 'done' };

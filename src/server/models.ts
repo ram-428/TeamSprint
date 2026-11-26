@@ -23,7 +23,8 @@ export const Org = model<any>('Org', S({
   maxUsers: { type: Number, default: 100 }, maxProjects: { type: Number, default: 50 },
 }, opts));
 
-export const Team = model<any>('Team', S({ orgId: { type: oid, index: true }, name: String, color: String, leadId: oid, memberIds: [oid] }, opts));
+/** Org-level teams (like Jira Teams). An issue may optionally belong to one team via `Issue.teamId`. `memberIds` is the source of truth for membership. */
+export const Team = model<any>('Team', S({ orgId: { type: oid, index: true }, name: String, description: String, color: String, leadId: oid, memberIds: [oid], createdBy: oid }, opts));
 
 /** Organization-level master lists. They feed Create issue, the board columns and issue validation for every project in the org. */
 const issueTypeMasterSchema = S({ orgId: { type: oid, index: true }, key: String, name: String, color: String, active: { type: Boolean, default: true }, system: { type: Boolean, default: false }, order: { type: Number, default: 0 } }, opts);
@@ -54,7 +55,7 @@ const issueSchema = S({
   summary: String, description: String, status: String, statusCategory: { type: String, default: 'todo' },
   priority: { type: String, default: 'Medium' }, resolution: String,
   reporterId: oid, assigneeId: { type: oid, index: true }, labels: [String], components: [String], fixVersion: String,
-  epicId: oid, parentId: oid, sprintId: { type: oid, index: true }, points: Number,
+  epicId: oid, parentId: oid, sprintId: { type: oid, index: true }, teamId: { type: oid, index: true }, points: Number,
   estimate: Number, timeSpent: { type: Number, default: 0 }, dueDate: Date, startDate: Date, rank: { type: Number, index: true },
   attachments: [{ id: String, name: String, url: String, publicId: String, resourceType: String, kind: String, format: String, bytes: Number, width: Number, height: Number, uploadedBy: String, createdAt: String, _id: false }],
   flagged: Boolean, watchers: [oid], votes: [oid], links: [{ type: { type: String }, targetKey: String, _id: false }],
