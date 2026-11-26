@@ -54,7 +54,7 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
   const sprintField = data.project.type === 'scrum' ? (canEdit ? <Select aria-label="Sprint" className="!h-9" value={issue.sprintId || ''} onChange={(v) => patch({ sprintId: v || null })} options={[{ value: '', label: 'Backlog' }, ...(sprints || []).filter((s) => s.state !== 'closed' || s._id === issue.sprintId).map((s) => ({ value: s._id, label: s.name }))]} /> : <span>{data.sprint?.name || 'Backlog'}</span>) : null;
   const epicField = issue.type !== 'epic' && (epics?.items?.length ?? 0) > 0 ? (canEdit ? <Select aria-label="Epic" className="!h-9" value={issue.epicId || ''} onChange={(v) => patch({ epicId: v || null })} options={[{ value: '', label: 'None' }, ...(epics?.items || []).map((e) => ({ value: e._id, label: `${e.key} · ${e.summary}`.slice(0, 40) }))]} /> : <span>{data.epic?.key || 'None'}</span>) : null;
   const teamField = canEdit
-    ? <TeamPicker compact value={issue.teamId || ''} onChange={(v) => patch({ teamId: v || null })} />
+    ? <TeamPicker compact projectKey={pk} value={issue.teamId || ''} onChange={(v) => patch({ teamId: v || null })} />
     : issue.team ? <div className="flex h-9 items-center gap-2"><TeamIcon color={issue.team.color} size={22} /><span className="truncate">{issue.team.name}</span></div> : <span>None</span>;
   const dueField = <>
     {canEdit ? <input aria-label="Due date" type="date" className="input !h-9" value={issue.dueDate ? issue.dueDate.slice(0, 10) : ''} onChange={(e) => patch({ dueDate: e.target.value || null })} /> : <span>{issue.dueDate ? new Date(issue.dueDate).toLocaleDateString() : '—'}</span>}

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import mongoose from 'mongoose';
 import { route, AppError, audit, forbidden, notFound } from '@/server/api';
 import { Team, Issue } from '@/server/models';
-import { canManageTeam, cleanMemberIds, teamColorSchema, teamNameSchema } from '@/server/teams';
+import { canManageTeam, cleanMemberIds, cleanProjectIds, teamColorSchema, teamNameSchema } from '@/server/teams';
 import type { AuthUser } from '@/server/auth';
 
 async function load(user: AuthUser, id: string) {
@@ -15,6 +15,7 @@ async function load(user: AuthUser, id: string) {
 const patchSchema = z.object({
   name: teamNameSchema.optional(), description: z.string().trim().max(500).optional(), color: teamColorSchema.optional(),
   memberIds: z.array(z.string()).max(500).optional(), leadId: z.string().nullish(),
+  projectIds: z.array(z.string()).max(200).optional(),
   join: z.boolean().optional(), // any non-guest may join/leave a team themselves
 });
 
@@ -39,6 +40,7 @@ export const PATCH = route(async (req, { user, params }) => {
   if (d.description !== undefined) t.description = d.description;
   if (d.color !== undefined) t.color = d.color;
   if (d.memberIds !== undefined) t.memberIds = (await cleanMemberIds(user.orgId!, d.memberIds)) as any;
+  if (d.projectIds !== undefined) t.projectIds = (await cleanProjectIds(user, d.projectIds, t.projectIds || [])) as any;
   if (d.leadId !== undefined) {
     if (d.leadId && !(t.memberIds || []).map(String).includes(d.leadId)) throw new AppError(400, 'BAD_LEAD', 'The team lead must be a member of the team', { leadId: 'Must be a member' });
     t.leadId = d.leadId || undefined;

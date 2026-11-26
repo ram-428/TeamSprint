@@ -2,6 +2,9 @@ import mongoose, { Schema, type Model } from 'mongoose';
 
 const opts = { timestamps: true } as const;
 function model<T>(name: string, schema: Schema): Model<T> {
+  // In dev, hot reload re-runs this file: re-register so schema changes (new fields) apply without restarting.
+  // Otherwise the cached model keeps the old schema and Mongoose silently drops the new fields on save.
+  if (process.env.NODE_ENV !== 'production' && mongoose.models[name]) mongoose.deleteModel(name);
   return ((mongoose.models[name] as unknown) || (mongoose.model(name, schema as any) as unknown)) as Model<T>;
 }
 const oid = Schema.Types.ObjectId;
@@ -23,8 +26,11 @@ export const Org = model<any>('Org', S({
   maxUsers: { type: Number, default: 100 }, maxProjects: { type: Number, default: 50 },
 }, opts));
 
-/** Org-level teams (like Jira Teams). An issue may optionally belong to one team via `Issue.teamId`. `memberIds` is the source of truth for membership. */
-export const Team = model<any>('Team', S({ orgId: { type: oid, index: true }, name: String, description: String, color: String, leadId: oid, memberIds: [oid], createdBy: oid }, opts));
+/**
+ * Org-level teams (like Jira Teams). `memberIds` is the source of truth for membership; `projectIds` are the projects the team works on
+ * (a team can work on many projects). An issue may optionally belong to one team via `Issue.teamId`.
+ */
+export const Team = model<any>('Team', S({ orgId: { type: oid, index: true }, name: String, description: String, color: String, leadId: oid, memberIds: [oid], projectIds: [oid], createdBy: oid }, opts));
 
 /** Organization-level master lists. They feed Create issue, the board columns and issue validation for every project in the org. */
 const issueTypeMasterSchema = S({ orgId: { type: oid, index: true }, key: String, name: String, color: String, active: { type: Boolean, default: true }, system: { type: Boolean, default: false }, order: { type: Number, default: 0 } }, opts);

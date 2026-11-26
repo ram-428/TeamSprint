@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 import { z } from 'zod';
-import { Team, User } from './models';
+import { Team, User, Project } from './models';
 import { AppError } from './api';
+import { can } from './rbac';
 import type { AuthUser } from './auth';
 
 export const teamColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Pick a colour');
@@ -11,6 +12,8 @@ export type TeamSummary = {
   _id: string; name: string; description?: string; color: string; leadId?: string; createdBy?: string;
   memberIds: string[]; memberCount: number; includesMe: boolean;
   members: { _id: string; name: string; color?: string; avatarUrl?: string }[];
+  /** Projects the team works on that the caller can see. */
+  projects: { _id: string; key: string; name: string; color?: string }[];
   canManage: boolean;
 };
 
@@ -24,8 +27,13 @@ export async function listTeams(user: AuthUser): Promise<TeamSummary[]> {
   if (!user.orgId) return [];
   const teams = await Team.find({ orgId: user.orgId }).sort({ name: 1 }).lean<any[]>();
   const ids = [...new Set(teams.flatMap((t) => (t.memberIds || []).map(String)))];
-  const users = await User.find({ _id: { $in: ids }, orgId: user.orgId, status: 'active' }).select('name color avatarUrl').lean<any[]>();
+  const pids = [...new Set(teams.flatMap((t) => (t.projectIds || []).map(String)))];
+  const [users, projects] = await Promise.all([
+    User.find({ _id: { $in: ids }, orgId: user.orgId, status: 'active' }).select('name color avatarUrl').lean<any[]>(),
+    pids.length ? Project.find({ _id: { $in: pids }, orgId: user.orgId, archived: false }).select('key name color visibility members orgId').lean<any[]>() : Promise.resolve([] as any[]),
+  ]);
   const byId = new Map(users.map((u) => [String(u._id), { _id: String(u._id), name: u.name, color: u.color, avatarUrl: u.avatarUrl }]));
+  const projById = new Map(projects.filter((p) => can(user, 'project.view', p)).map((p) => [String(p._id), { _id: String(p._id), key: p.key, name: p.name, color: p.color }]));
   return teams.map((t) => {
     const members = (t.memberIds || []).map(String).map((id: string) => byId.get(id)).filter(Boolean) as TeamSummary['members'];
     return {
@@ -33,8 +41,22 @@ export async function listTeams(user: AuthUser): Promise<TeamSummary[]> {
       leadId: t.leadId ? String(t.leadId) : undefined, createdBy: t.createdBy ? String(t.createdBy) : undefined,
       memberIds: members.map((m) => m._id), memberCount: members.length, includesMe: members.some((m) => m._id === user.id),
       members, canManage: canManageTeam(user, t),
+      projects: (t.projectIds || []).map(String).map((id: string) => projById.get(id)).filter(Boolean) as TeamSummary['projects'],
     };
   });
+}
+
+/**
+ * Validates the projects a team works on: each must be an active project of the org that the caller can see.
+ * Projects already linked that the caller cannot see are kept, so editing a team never silently unlinks them.
+ */
+export async function cleanProjectIds(user: AuthUser, ids: string[], existing: any[] = []): Promise<mongoose.Types.ObjectId[]> {
+  const uniq = [...new Set(ids)].filter((id) => mongoose.isValidObjectId(id));
+  const all = await Project.find({ orgId: user.orgId, archived: false, _id: { $in: [...uniq, ...existing.map(String)] } }).select('visibility members orgId').lean<any[]>();
+  const visible = new Set(all.filter((p) => can(user, 'project.view', p)).map((p) => String(p._id)));
+  if (uniq.some((id) => !visible.has(id))) throw new AppError(400, 'BAD_PROJECT', 'Some projects were not found', { projectIds: 'Pick projects you can access' });
+  const hiddenKept = existing.map(String).filter((id) => !visible.has(id) && all.some((p) => String(p._id) === id));
+  return [...new Set([...uniq, ...hiddenKept])].map((id) => new mongoose.Types.ObjectId(id));
 }
 
 /** Keeps only ids of active users in the organization; rejects anything else. */

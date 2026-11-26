@@ -82,7 +82,7 @@ export function CreateIssueModal({ open, onClose, projectKey, defaults, onCreate
           <Field label="Assignee"><Select value={f.assigneeId} onChange={(v) => setF({ ...f, assigneeId: v })} options={[{ value: '', label: 'Unassigned' }, ...(users || []).map((u) => ({ value: u._id, label: u.name }))]} aria-label="Assignee" /></Field>
           <Field label="Status" error={errs.status}><Select value={f.status} onChange={(v) => setF({ ...f, status: v })} options={statusOptions.length ? statusOptions : [{ value: f.status, label: 'Loading…' }]} aria-label="Status" /></Field>
           <Field label="Due date"><input type="date" className="input" value={f.dueDate} onChange={(e) => setF({ ...f, dueDate: e.target.value })} aria-label="Due date" /></Field>
-          <Field label="Team" error={errs.teamId}><TeamPicker value={f.teamId} onChange={(v) => setF((x: any) => ({ ...x, teamId: v }))} /></Field>
+          <Field label="Team" error={errs.teamId}><TeamPicker projectKey={pk} value={f.teamId} onChange={(v) => setF((x: any) => ({ ...x, teamId: v }))} /></Field>
           {(epics?.items?.length ?? 0) > 0 && <Field label="Epic"><Select value={f.epicId} onChange={(v) => setF({ ...f, epicId: v })} options={[{ value: '', label: 'None' }, ...(epics?.items || []).map((e) => ({ value: e._id, label: `${e.key} · ${e.summary}` }))]} aria-label="Epic" /></Field>}
           {isScrum && (sprints?.filter((s) => s.state !== 'closed').length ?? 0) > 0 && <Field label="Sprint"><Select value={f.sprintId} onChange={(v) => setF({ ...f, sprintId: v })} options={[{ value: '', label: 'Backlog' }, ...(sprints || []).filter((s) => s.state !== 'closed').map((s) => ({ value: s._id, label: s.name }))]} aria-label="Sprint" /></Field>}
         </div>

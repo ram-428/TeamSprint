@@ -8,7 +8,7 @@ import { api, ApiError, errMsg, invalidate, toast, useApi } from '@/lib/api';
 import { Avatar, Field, Modal, Select, Spinner } from './ui';
 import { useMe } from './UserContext';
 
-export type TeamLite = { _id: string; name: string; color: string; description?: string; memberCount: number; includesMe: boolean; memberIds: string[]; leadId?: string; members: { _id: string; name: string; color?: string; avatarUrl?: string }[]; canManage: boolean };
+export type TeamLite = { _id: string; name: string; color: string; description?: string; memberCount: number; includesMe: boolean; memberIds: string[]; leadId?: string; members: { _id: string; name: string; color?: string; avatarUrl?: string }[]; projects: { _id: string; key: string; name: string; color?: string }[]; canManage: boolean };
 
 /** Square team badge (Jira style): coloured tile with a people glyph. */
 export function TeamIcon({ color, size = 28 }: { color?: string; size?: number }) {
@@ -21,7 +21,7 @@ export const memberLine = (t: Pick<TeamLite, 'memberCount' | 'includesMe'>) => `
  * Jira-like Team field: searchable list of the organization's teams showing member counts ("including you"),
  * an option to clear it, and "Create a team" at the bottom.
  */
-export function TeamPicker({ value, onChange, disabled, className, compact }: { value: string; onChange: (teamId: string) => void; disabled?: boolean; className?: string; compact?: boolean }) {
+export function TeamPicker({ value, onChange, disabled, className, compact, projectKey }: { value: string; onChange: (teamId: string) => void; disabled?: boolean; className?: string; compact?: boolean; projectKey?: string }) {
   const me = useMe();
   const { data: teams, reload } = useApi<TeamLite[]>('/api/teams');
   const [open, setOpen] = useState(false); const [q, setQ] = useState(''); const [idx, setIdx] = useState(0);
@@ -29,7 +29,10 @@ export function TeamPicker({ value, onChange, disabled, className, compact }: { 
   const [pos, setPos] = useState<{ left: number; width: number; top?: number; bottom?: number; maxH: number } | null>(null);
   const trig = useRef<HTMLButtonElement>(null); const search = useRef<HTMLInputElement>(null);
   const selected = teams?.find((t) => t._id === value);
-  const list = (teams || []).filter((t) => !q.trim() || t.name.toLowerCase().includes(q.trim().toLowerCase()));
+  // Teams that work on the issue's project are listed first (all teams stay pickable).
+  const inProject = (t: TeamLite) => !!projectKey && (t.projects || []).some((p) => p.key === projectKey);
+  const list = (teams || []).filter((t) => !q.trim() || t.name.toLowerCase().includes(q.trim().toLowerCase()))
+    .sort((a, b) => Number(inProject(b)) - Number(inProject(a)));
   const canCreate = me.role !== 'guest';
 
   useEffect(() => {
@@ -79,7 +82,7 @@ export function TeamPicker({ value, onChange, disabled, className, compact }: { 
                   <button key={t._id} type="button" role="option" aria-selected={t._id === value} onMouseEnter={() => setIdx(i)} onClick={() => pick(t._id)}
                     className={clsx('flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left transition-colors', i === idx && 'bg-[var(--accent-soft)]')}>
                     <TeamIcon color={t.color} size={30} />
-                    <span className="min-w-0 flex-1"><span className={clsx('block truncate text-[13.5px]', t._id === value && 'font-semibold')}>{t.name}</span><span className="block truncate text-[12px] text-muted">{memberLine(t)}</span></span>
+                    <span className="min-w-0 flex-1"><span className={clsx('block truncate text-[13.5px]', t._id === value && 'font-semibold')}>{t.name}</span><span className="block truncate text-[12px] text-muted">{memberLine(t)}{inProject(t) && <span className="text-accent2"> • in {projectKey}</span>}</span></span>
                     {t._id === value && <Check size={14} className="shrink-0 text-accent" />}
                   </button>))}
               </div>
@@ -96,11 +99,12 @@ export function TeamPicker({ value, onChange, disabled, className, compact }: { 
 export function TeamFormModal({ open, team, onClose, onSaved }: { open: boolean; team?: TeamLite | null; onClose: () => void; onSaved: (id?: string) => void }) {
   const me = useMe();
   const { data: users } = useApi<any[]>(open ? '/api/users' : null);
-  const [f, setF] = useState({ name: '', description: '', color: '#7c5cff', memberIds: [] as string[], leadId: '' });
+  const { data: projects } = useApi<any[]>(open ? '/api/projects' : null);
+  const [f, setF] = useState({ name: '', description: '', color: '#7c5cff', memberIds: [] as string[], leadId: '', projectIds: [] as string[] });
   const [q, setQ] = useState(''); const [busy, setBusy] = useState(false); const [errs, setErrs] = useState<Record<string, string>>({});
   useEffect(() => {
     if (!open) return; setErrs({}); setQ('');
-    setF(team ? { name: team.name, description: team.description || '', color: team.color || '#7c5cff', memberIds: team.memberIds, leadId: team.leadId || '' } : { name: '', description: '', color: '#7c5cff', memberIds: [me.id], leadId: me.id });
+    setF(team ? { name: team.name, description: team.description || '', color: team.color || '#7c5cff', memberIds: team.memberIds, leadId: team.leadId || '', projectIds: (team.projects || []).map((p) => p._id) } : { name: '', description: '', color: '#7c5cff', memberIds: [me.id], leadId: me.id, projectIds: [] });
   }, [open, team, me.id]);
   // A super admin working inside another organization is not one of its people: don't pre-add them as member/lead.
   useEffect(() => {
@@ -112,7 +116,7 @@ export function TeamFormModal({ open, team, onClose, onSaved }: { open: boolean;
   async function go() {
     setBusy(true); setErrs({});
     try {
-      const body = { name: f.name, description: f.description, color: f.color, memberIds: f.memberIds, leadId: f.leadId || null };
+      const body = { name: f.name, description: f.description, color: f.color, memberIds: f.memberIds, leadId: f.leadId || null, projectIds: f.projectIds };
       let id = team?._id;
       if (team) await api(`/api/teams/${team._id}`, { method: 'PATCH', body });
       else id = (await api<{ _id: string }>('/api/teams', { body }))._id;
@@ -136,6 +140,15 @@ export function TeamFormModal({ open, team, onClose, onSaved }: { open: boolean;
               <label key={u._id} className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-[var(--surface-2)]">
                 <input type="checkbox" className="accent-[var(--accent)]" checked={f.memberIds.includes(u._id)} onChange={() => toggle(u._id)} aria-label={`Member ${u.name}`} />
                 <Avatar user={u} size={22} /><span className="min-w-0 flex-1 truncate text-[13.5px]">{u.name}{u._id === me.id && <span className="ml-1 text-faint">(you)</span>}</span><span className="truncate text-xs text-faint">{u.email}</span>
+              </label>))}
+          </div>
+        </Field>
+        <Field label={`Projects (${f.projectIds.length})`} error={errs.projectIds} hint="Projects this team works on. A team can work on several projects.">
+          <div className="max-h-40 overflow-y-auto rounded-lg border border-[var(--border)] p-1">
+            {!projects ? <div className="flex justify-center py-3"><Spinner /></div> : projects.length === 0 ? <div className="py-3 text-center text-[13px] text-faint">No projects</div> : projects.map((p) => (
+              <label key={p._id} className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-[var(--surface-2)]">
+                <input type="checkbox" className="accent-[var(--accent)]" checked={f.projectIds.includes(p._id)} onChange={() => setF((x) => ({ ...x, projectIds: x.projectIds.includes(p._id) ? x.projectIds.filter((id) => id !== p._id) : [...x.projectIds, p._id] }))} aria-label={`Project ${p.name}`} />
+                <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: p.color || 'var(--accent)' }} /><span className="min-w-0 flex-1 truncate text-[13.5px]">{p.name}</span><span className="key text-xs text-faint">{p.key}</span>
               </label>))}
           </div>
         </Field>
