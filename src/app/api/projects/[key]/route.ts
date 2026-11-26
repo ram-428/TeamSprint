@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { route, audit } from '@/server/api';
+import { route, AppError, audit } from '@/server/api';
 import { Project, User, Issue } from '@/server/models';
 import { loadProject, requirePerm } from '@/server/domain';
 import { abilities } from '@/server/rbac';
@@ -9,13 +9,13 @@ export const GET = route(async (_req, { user, params }) => {
   const ids = [...p.members.map((m: any) => m.userId), p.leadId].filter(Boolean);
   const users = await User.find({ _id: { $in: ids } }).select('name email color title role avatarUrl').lean<any[]>();
   const members = p.members.map((m: any) => ({ ...users.find((u) => String(u._id) === String(m.userId)), projectRole: m.role }));
-  // org-wide users that can be assigned (everyone with at least developer/reporter role)
-  return { ...p, members, abilities: abilities(user, p), starred: (p.starredBy || []).map(String).includes(user.id) };
+  const lead = users.find((u) => String(u._id) === String(p.leadId));
+  return { ...p, members, lead: lead && { name: lead.name }, abilities: abilities(user, p), starred: (p.starredBy || []).map(String).includes(user.id) };
 });
 
 const patchSchema = z.object({
   name: z.string().min(2).max(60).optional(), description: z.string().max(500).optional(), color: z.string().optional(), icon: z.string().optional(),
-  visibility: z.enum(['private', 'org']).optional(), leadId: z.string().optional(), archived: z.boolean().optional(),
+  visibility: z.enum(['private', 'org']).optional(), leadId: z.string().regex(/^[0-9a-f]{24}$/i, 'Select a project member').optional(), archived: z.boolean().optional(),
   components: z.array(z.string()).optional(), wip: z.record(z.string(), z.number().int().min(0)).optional(),
   versions: z.array(z.object({ id: z.string(), name: z.string(), releaseDate: z.string().optional(), released: z.boolean().optional() })).optional(),
   starred: z.boolean().optional(),
@@ -30,8 +30,13 @@ export const PATCH = route(async (req, { user, params }) => {
   }
   const { starred, ...rest } = d; void starred;
   if (Object.keys(rest).length) {
-    requirePerm(user, rest.wip ? 'board.manage' : 'project.edit', p);
-    await Project.updateOne({ _id: p._id }, rest);
+    if (rest.wip) requirePerm(user, 'board.manage', p);
+    if (!rest.wip || rest.leadId !== undefined) requirePerm(user, 'project.edit', p);
+    const filter = { _id: p._id, ...(rest.leadId !== undefined && { 'members.userId': rest.leadId }) };
+    const result = await Project.updateOne(filter, rest);
+    if (rest.leadId !== undefined && !result.matchedCount) {
+      throw new AppError(400, 'BAD_LEAD', 'The project lead must be a project member', { leadId: 'Select a project member' });
+    }
     await audit(user, 'project.updated', p.key, rest);
   }
   return { done: true };
