@@ -102,6 +102,11 @@ export function TeamFormModal({ open, team, onClose, onSaved }: { open: boolean;
     if (!open) return; setErrs({}); setQ('');
     setF(team ? { name: team.name, description: team.description || '', color: team.color || '#7c5cff', memberIds: team.memberIds, leadId: team.leadId || '' } : { name: '', description: '', color: '#7c5cff', memberIds: [me.id], leadId: me.id });
   }, [open, team, me.id]);
+  // A super admin working inside another organization is not one of its people: don't pre-add them as member/lead.
+  useEffect(() => {
+    if (!open || team || !users) return;
+    if (!users.some((u) => u._id === me.id)) setF((x) => ({ ...x, memberIds: x.memberIds.filter((m) => m !== me.id), leadId: x.leadId === me.id ? '' : x.leadId }));
+  }, [open, team, users, me.id]);
   const toggle = (id: string) => setF((x) => { const has = x.memberIds.includes(id); const memberIds = has ? x.memberIds.filter((m) => m !== id) : [...x.memberIds, id]; return { ...x, memberIds, leadId: has && x.leadId === id ? '' : x.leadId }; });
   const shown = (users || []).filter((u) => !q.trim() || `${u.name} ${u.email}`.toLowerCase().includes(q.trim().toLowerCase()));
   async function go() {
@@ -124,7 +129,7 @@ export function TeamFormModal({ open, team, onClose, onSaved }: { open: boolean;
           <Field label="Colour"><input type="color" className="h-10 w-14 cursor-pointer rounded border border-[var(--border)] bg-transparent p-1" value={f.color} onChange={(e) => setF({ ...f, color: e.target.value })} aria-label="Team colour" /></Field>
         </div>
         <Field label="Description"><textarea className="input min-h-[64px]" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} placeholder="What does this team work on?" aria-label="Team description" /></Field>
-        <Field label={`Members (${f.memberIds.length})`} error={errs.memberIds}>
+        <Field label={`Members (${users ? users.filter((u) => f.memberIds.includes(u._id)).length : f.memberIds.length})`} error={errs.memberIds}>
           <input className="input mb-2" placeholder="Search people…" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search people" />
           <div className="max-h-52 overflow-y-auto rounded-lg border border-[var(--border)] p-1">
             {!users ? <div className="flex justify-center py-3"><Spinner /></div> : shown.length === 0 ? <div className="py-3 text-center text-[13px] text-faint">No people found</div> : shown.map((u) => (
@@ -134,7 +139,7 @@ export function TeamFormModal({ open, team, onClose, onSaved }: { open: boolean;
               </label>))}
           </div>
         </Field>
-        <Field label="Team lead" error={errs.leadId}><Select value={f.leadId} onChange={(v) => setF({ ...f, leadId: v })} options={[{ value: '', label: 'No lead' }, ...members.map((u) => ({ value: u._id, label: u.name }))]} aria-label="Team lead" /></Field>
+        <Field label="Team lead" error={errs.leadId} hint={members.length ? 'The lead is picked from the members ticked above.' : 'Tick members above first — the lead is chosen from them.'}><Select value={members.some((u) => u._id === f.leadId) ? f.leadId : ''} onChange={(v) => setF({ ...f, leadId: v })} options={[{ value: '', label: 'No lead' }, ...members.map((u) => ({ value: u._id, label: u.name }))]} aria-label="Team lead" /></Field>
       </div>
     </Modal>
   );

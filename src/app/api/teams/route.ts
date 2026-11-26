@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { route, AppError, audit } from '@/server/api';
-import { Team } from '@/server/models';
+import { Team, User } from '@/server/models';
 import { listTeams, cleanMemberIds, teamColorSchema, teamNameSchema } from '@/server/teams';
 
 /** All teams in the caller's organization (used by the Team picker and the Teams page). */
@@ -18,8 +18,10 @@ export const POST = route(async (req, { user }) => {
   const d = createSchema.parse(await req.json());
   const exists = await Team.exists({ orgId: user.orgId, name: new RegExp(`^${d.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
   if (exists) throw new AppError(409, 'DUPLICATE', 'A team with that name already exists', { name: 'Already exists' });
-  const memberIds = await cleanMemberIds(user.orgId, [...(d.memberIds || []), user.id]);
-  const leadId = d.leadId && memberIds.some((m) => String(m) === d.leadId) ? d.leadId : user.id;
+  // The creator joins the team when they are a person of this org (a super admin acting in another org is not).
+  const creatorInOrg = !!(await User.exists({ _id: user.id, orgId: user.orgId, status: 'active' }));
+  const memberIds = await cleanMemberIds(user.orgId, [...(d.memberIds || []), ...(creatorInOrg ? [user.id] : [])]);
+  const leadId = d.leadId && memberIds.some((m) => String(m) === d.leadId) ? d.leadId : d.leadId === undefined && creatorInOrg ? user.id : undefined;
   const t = await Team.create({ orgId: user.orgId, name: d.name, description: d.description, color: d.color || '#7c5cff', memberIds, leadId, createdBy: user.id });
   await audit(user, 'team.created', d.name);
   return { _id: String(t._id), name: t.name };
