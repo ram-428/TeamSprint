@@ -39,6 +39,7 @@ const patchSchema = z.object({
   labels: z.array(z.string().max(40)).max(20).optional(), components: z.array(z.string()).optional(), fixVersion: z.string().optional(),
   points: z.number().min(0).max(100).nullable().optional(), estimate: z.number().min(0).nullable().optional(),
   dueDate: z.string().nullable().optional(), startDate: z.string().nullable().optional(), sprintId: z.string().nullable().optional(), epicId: z.string().nullable().optional(),
+  teamId: z.string().nullable().optional(),
   flagged: z.boolean().optional(), version: z.number().optional(),
   watch: z.boolean().optional(), vote: z.boolean().optional(),
 });

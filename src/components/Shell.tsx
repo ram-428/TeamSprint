@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, FolderKanban, Search, Bell, Plus, Sun, Moon, Contrast, LogOut, Settings, Target, Gauge, ShieldCheck, Building2, ListChecks,
-  Command, Filter, Eye, X, UserCircle2, Menu, ChevronLeft, ChevronRight,
+  Command, Filter, Eye, X, UserCircle2, Menu, ChevronLeft, ChevronRight, Users,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { Logo } from './Logo';
@@ -26,7 +26,7 @@ function OrgSwitcher({ me, path }: { me: Me; path: string }) {
     try {
       await api('/api/admin/platform/context', { body: { orgId } });
       // hard navigation so every cached list/board from the previous organization is dropped
-      const keep = ['/dashboard', '/projects', '/goals', '/workload', '/search', '/notifications', '/admin/org', '/admin/masters', '/admin/platform', '/settings'];
+      const keep = ['/dashboard', '/projects', '/goals', '/workload', '/teams', '/search', '/notifications', '/admin/org', '/admin/masters', '/admin/platform', '/settings'];
       window.location.href = keep.includes(path) ? path : '/dashboard';
     } catch (e) { toast.error(errMsg(e)); setBusy(false); }
   }
@@ -72,7 +72,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/projects', label: 'Projects', icon: FolderKanban, match: '/projects' },
     { href: '/search', label: 'Filters', icon: Filter },
-    ...(me.role !== 'guest' ? [{ href: '/goals', label: 'Goals', icon: Target }, { href: '/workload', label: 'Workload', icon: Gauge }] : []),
+    ...(me.role !== 'guest' ? [{ href: '/goals', label: 'Goals', icon: Target }, { href: '/workload', label: 'Workload', icon: Gauge }, { href: '/teams', label: 'Teams', icon: Users }] : []),
     { href: '/notifications', label: 'Inbox', icon: Bell },
   ];
   const admin: NavItem[] = [

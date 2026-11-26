@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { Issue, Project, User, Automation, Sprint } from './models';
+import { Issue, Project, User, Automation, Sprint, Team } from './models';
 import { AppError, forbidden, notFound, notify, logActivity } from './api';
 import { can, type ProjectLike } from './rbac';
 import type { AuthUser } from './auth';
@@ -7,6 +7,7 @@ import type { AuthUser } from './auth';
 import { STATUSES, type StatusDef } from '../lib/statuses';
 import { ensureProjectStatuses } from './migrate';
 import { applyMasters, activeTypeKeys } from './masters';
+import { assertTeam } from './teams';
 export { STATUSES, type StatusDef };
 
 /** Every project type now uses the same shared status set. */
@@ -81,6 +82,16 @@ export async function applyIssueUpdate(user: AuthUser, issue: any, project: any,
   }
   if ('sprintId' in patch) issue.sprintId = patch.sprintId || undefined;
   if ('epicId' in patch) issue.epicId = patch.epicId || undefined;
+  // Team is optional. Its history entry stores team names (not ids) so the History tab reads naturally.
+  let teamDiff: { from: any; to: any } | undefined;
+  if ('teamId' in patch && String(patch.teamId || '') !== String(issue.teamId || '')) {
+    const [from, to] = await Promise.all([
+      issue.teamId ? Team.findById(issue.teamId).select('name').lean<any>() : null,
+      patch.teamId ? assertTeam(project.orgId, patch.teamId) : null,
+    ]);
+    issue.teamId = patch.teamId || undefined;
+    teamDiff = { from: from?.name ?? null, to: to?.name ?? null };
+  }
   if ('rank' in patch) issue.rank = patch.rank;
   issue.version = (issue.version || 1) + 1;
   await issue.save();
@@ -88,6 +99,7 @@ export async function applyIssueUpdate(user: AuthUser, issue: any, project: any,
   const diff: Record<string, { from: any; to: any }> = {};
   for (const f of FIELDS_DIFF) if (norm(before[f]) !== norm(issue[f]) && f !== 'description') diff[f] = { from: before[f] ?? null, to: issue[f] ?? null };
   if (norm(before.description) !== norm(issue.description)) diff.description = { from: '(edited)', to: '(edited)' };
+  if (teamDiff) diff.team = teamDiff;
   if (Object.keys(diff).length) {
     await logActivity(user, issue, 'updated', diff);
     const watchers = [issue.reporterId, issue.assigneeId, ...(issue.watchers || [])];
@@ -125,13 +137,14 @@ export async function createIssue(user: AuthUser, project: any, data: Record<str
   const number = p.issueCounter;
   const first = (data.status && project.statuses.find((s: any) => s.id === data.status)) || project.statuses[0];
   if (data.status && first.id !== data.status) throw new AppError(400, 'BAD_STATUS', 'Unknown status for this project');
+  if (data.teamId) await assertTeam(project.orgId, data.teamId);
   const last = await Issue.findOne({ projectId: project._id }).sort({ rank: -1 }).select('rank').lean<any>();
   const issue = await Issue.create({
     orgId: project.orgId, projectId: project._id, projectKey: project.key, number, key: `${project.key}-${number}`,
     type: data.type || 'task', summary: data.summary, description: data.description, status: first.id, statusCategory: first.category,
     priority: data.priority || 'Medium', reporterId: user.id, assigneeId: data.assigneeId || (project.type === 'service_desk' ? undefined : undefined),
     attachments: data.attachments || [], labels: data.labels || [], components: data.components || [], fixVersion: data.fixVersion, epicId: data.epicId, parentId: data.parentId,
-    sprintId: data.sprintId, points: data.points, estimate: data.estimate, dueDate: data.dueDate, startDate: data.startDate,
+    sprintId: data.sprintId, teamId: data.teamId, points: data.points, estimate: data.estimate, dueDate: data.dueDate, startDate: data.startDate,
     rank: (last?.rank ?? 0) + 1000, watchers: [user.id], statusChangedAt: new Date(),
     ...(first.category === 'done' ? { resolvedAt: new Date(), resolution: first.id === 'cancelled' ? "Won't Do" : 'Done' } : {}),
     slaDue: project.type === 'service_desk' ? new Date(Date.now() + 8 * 36e5) : undefined,

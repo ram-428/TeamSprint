@@ -310,10 +310,10 @@ export function Select({ value, onChange, options, className, disabled, placehol
 }
 
 /** Simple client-side pagination footer. */
-export function Pagination({ page, pageSize, total, onPage, onPageSize }: { page: number; pageSize: number; total: number; onPage: (p: number) => void; onPageSize?: (n: number) => void }) {
+export function Pagination({ page, pageSize, total, onPage, onPageSize, className }: { page: number; pageSize: number; total: number; onPage: (p: number) => void; onPageSize?: (n: number) => void; className?: string }) {
   const pages = Math.max(1, Math.ceil(total / pageSize)); const from = total === 0 ? 0 : (page - 1) * pageSize + 1; const to = Math.min(total, page * pageSize);
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] px-4 py-3 text-[13px] text-muted">
+    <div className={clsx('flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] px-4 py-3 text-[13px] text-muted', className)}>
       <span>{from}–{to} of {total}</span>
       <div className="flex items-center gap-2">
         {onPageSize && <select aria-label="Rows per page" className="input !h-8 !w-auto !py-0 text-[13px]" value={pageSize} onChange={(e) => onPageSize(Number(e.target.value))}>{Array.from(new Set([10, 25, 50, pageSize])).sort((a, b) => a - b).map((n) => <option key={n} value={n}>{n} / page</option>)}</select>}

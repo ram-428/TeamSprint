@@ -7,6 +7,7 @@ import { api, ApiError, errMsg, invalidate, toast, useApi } from '@/lib/api';
 import { parseCapture } from '@/lib/capture';
 import { HIDDEN_FROM_PICKERS } from '@/lib/issueTypes';
 import { AttachmentPicker } from '../Attachments';
+import { TeamPicker } from '../TeamPicker';
 import type { Attachment } from '@/lib/attachments';
 
 const PRIOS = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
@@ -16,7 +17,7 @@ export function CreateIssueModal({ open, onClose, projectKey, defaults, onCreate
   const { data: projects } = useApi<any[]>(open && !projectKey ? '/api/projects' : null);
   const creatable = useMemo(() => (projects || []).filter((p) => p.abilities?.['issue.create']), [projects]);
   const [pk, setPk] = useState(projectKey || '');
-  const [f, setF] = useState<any>({ type: 'task', summary: '', description: '', priority: 'Medium', assigneeId: '', status: 'todo', dueDate: '', epicId: '', sprintId: '' });
+  const [f, setF] = useState<any>({ type: 'task', summary: '', description: '', priority: 'Medium', assigneeId: '', status: 'todo', dueDate: '', epicId: '', sprintId: '', teamId: '' });
   const [busy, setBusy] = useState(false); const [errs, setErrs] = useState<Record<string, string>>({});
   const [another, setAnother] = useState(false);
   const [atts, setAtts] = useState<Attachment[]>([]);
@@ -49,7 +50,7 @@ export function CreateIssueModal({ open, onClose, projectKey, defaults, onCreate
     try {
       const r = await api<{ key: string }>('/api/issues', { body: {
         project: pk, type: cap.type || f.type, summary: cap.summary, description: f.description || undefined, priority: cap.priority || f.priority, assigneeId: assigneeId || null,
-        labels: cap.labels, points: cap.points ?? null, status: f.status || undefined, dueDate: f.dueDate || null, epicId: f.epicId || null, sprintId: f.sprintId || null,
+        labels: cap.labels, points: cap.points ?? null, status: f.status || undefined, dueDate: f.dueDate || null, epicId: f.epicId || null, sprintId: f.sprintId || null, teamId: f.teamId || null,
         attachments: atts.length ? atts.map(({ name, url, publicId, resourceType, format, bytes, width, height }) => ({ name, url, publicId, resourceType, format, bytes, width, height })) : undefined,
       } });
       invalidate('/api/issues'); invalidate('/api/projects'); invalidate('/api/dashboard');
@@ -81,6 +82,7 @@ export function CreateIssueModal({ open, onClose, projectKey, defaults, onCreate
           <Field label="Assignee"><Select value={f.assigneeId} onChange={(v) => setF({ ...f, assigneeId: v })} options={[{ value: '', label: 'Unassigned' }, ...(users || []).map((u) => ({ value: u._id, label: u.name }))]} aria-label="Assignee" /></Field>
           <Field label="Status" error={errs.status}><Select value={f.status} onChange={(v) => setF({ ...f, status: v })} options={statusOptions.length ? statusOptions : [{ value: f.status, label: 'Loading…' }]} aria-label="Status" /></Field>
           <Field label="Due date"><input type="date" className="input" value={f.dueDate} onChange={(e) => setF({ ...f, dueDate: e.target.value })} aria-label="Due date" /></Field>
+          <Field label="Team" error={errs.teamId}><TeamPicker projectKey={pk} value={f.teamId} onChange={(v) => setF((x: any) => ({ ...x, teamId: v }))} /></Field>
           {(epics?.items?.length ?? 0) > 0 && <Field label="Epic"><Select value={f.epicId} onChange={(v) => setF({ ...f, epicId: v })} options={[{ value: '', label: 'None' }, ...(epics?.items || []).map((e) => ({ value: e._id, label: `${e.key} · ${e.summary}` }))]} aria-label="Epic" /></Field>}
           {isScrum && (sprints?.filter((s) => s.state !== 'closed').length ?? 0) > 0 && <Field label="Sprint"><Select value={f.sprintId} onChange={(v) => setF({ ...f, sprintId: v })} options={[{ value: '', label: 'Backlog' }, ...(sprints || []).filter((s) => s.state !== 'closed').map((s) => ({ value: s._id, label: s.name }))]} aria-label="Sprint" /></Field>}
         </div>

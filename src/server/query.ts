@@ -1,17 +1,21 @@
 import mongoose from 'mongoose';
-import { Issue, Project, User, Sprint } from './models';
+import { Issue, Project, User, Sprint, Team } from './models';
 import { compile, parse, OqlError, type Resolver } from './oql';
 import { AppError } from './api';
 import { can } from './rbac';
 import type { AuthUser } from './auth';
 
-/** Attach lightweight assignee/reporter objects to issues for the UI. */
+/** Attach lightweight assignee/reporter (and team, when set) objects to issues for the UI. */
 export async function hydrate(issues: any[]) {
-  const ids = new Set<string>();
-  for (const i of issues) { if (i.assigneeId) ids.add(String(i.assigneeId)); if (i.reporterId) ids.add(String(i.reporterId)); }
-  const users = await User.find({ _id: { $in: [...ids] } }).select('name color title avatarUrl').lean<any[]>();
+  const ids = new Set<string>(); const teamIds = new Set<string>();
+  for (const i of issues) { if (i.assigneeId) ids.add(String(i.assigneeId)); if (i.reporterId) ids.add(String(i.reporterId)); if (i.teamId) teamIds.add(String(i.teamId)); }
+  const [users, teams] = await Promise.all([
+    User.find({ _id: { $in: [...ids] } }).select('name color title avatarUrl').lean<any[]>(),
+    teamIds.size ? Team.find({ _id: { $in: [...teamIds] } }).select('name color').lean<any[]>() : Promise.resolve([] as any[]),
+  ]);
   const map = new Map(users.map((u) => [String(u._id), { _id: String(u._id), name: u.name, color: u.color }]));
-  return issues.map((i) => ({ ...i, assignee: i.assigneeId ? map.get(String(i.assigneeId)) : undefined, reporter: i.reporterId ? map.get(String(i.reporterId)) : undefined }));
+  const tmap = new Map(teams.map((t) => [String(t._id), { _id: String(t._id), name: t.name, color: t.color }]));
+  return issues.map((i) => ({ ...i, assignee: i.assigneeId ? map.get(String(i.assigneeId)) : undefined, reporter: i.reporterId ? map.get(String(i.reporterId)) : undefined, ...(i.teamId ? { team: tmap.get(String(i.teamId)) } : {}) }));
 }
 
 /** IDs of projects the user may view. */
@@ -35,6 +39,10 @@ export function resolver(user: AuthUser): Resolver {
     sprint: async (s) => {
       const q: any = s === '__open__' ? { state: 'active' } : { name: new RegExp(`^${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') };
       return (await Sprint.find({ orgId: user.orgId, ...q }).select('_id').lean<any[]>()).map((x) => String(x._id));
+    },
+    team: async (s) => {
+      const t = await Team.findOne({ orgId: user.orgId, name: new RegExp(`^${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }).select('_id').lean<any>();
+      return t ? String(t._id) : null;
     },
   };
 }
