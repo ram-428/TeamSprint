@@ -142,6 +142,21 @@ export default function BacklogPage({ params }: { params: Promise<{ key: string 
     } catch (e) { toast.error(errMsg(e)); } finally { setMoving(false); }
   }
 
+  // Map the selected work items to an epic (or take them out of their epic) in one go.
+  async function setEpicSelected(epicId: string) {
+    if (!epicId || !selected_.length) return; const target = epicId === 'none' ? null : epicId;
+    const keys = selected_.filter((k) => String(byKey.get(k)?.epicId ?? '') !== String(target ?? ''));
+    if (!keys.length) { toast.info(target ? 'Selected issues are already in that epic' : 'Selected issues have no epic'); return; }
+    setMoving(true);
+    try {
+      const r = await api<{ succeeded: number; results: { ok: boolean; error?: string }[] }>('/api/issues/bulk', { body: { keys, patch: { epicId: target } } });
+      const failed = keys.length - r.succeeded; const n = `${r.succeeded} issue${r.succeeded === 1 ? '' : 's'}`;
+      const name = target ? epics.find((e) => e._id === target)?.summary : null;
+      failed ? toast.error(`Updated ${r.succeeded}, ${failed} failed: ${r.results.find((x) => !x.ok)?.error ?? ''}`) : toast.success(name ? `Added ${n} to epic “${name}”` : `Removed ${n} from their epic`);
+      setSel_([]); mutate(); invalidate('/api/issues');
+    } catch (e) { toast.error(errMsg(e)); } finally { setMoving(false); }
+  }
+
   const activeIssue = active ? byKey.get(active) : null;
   const hasFilters = !!q || !!epicF || assignees.length > 0;
   const visibleKeys = (ks: string[] = []) => ks.filter((k) => { const i = byKey.get(k); return !!i && match(i); });
@@ -195,6 +210,9 @@ export default function BacklogPage({ params }: { params: Promise<{ key: string 
             <span className="text-muted">Move to</span>
             {planning.map((s) => <button key={s._id} className="btn btn-sm" disabled={moving} onClick={() => moveSelected(String(s._id))}>{s.name}{s.state === 'active' && <span className="text-success"> ●</span>}</button>)}
             <button className="btn btn-sm" disabled={moving} onClick={() => moveSelected('backlog')}>Backlog</button>
+            <span className="mx-1 h-5 w-px bg-[var(--border)]" />
+            <Select aria-label="Set epic for selected" className="!w-44" disabled={moving} value="" onChange={setEpicSelected} placeholder="Epic…"
+              options={[...epics.map((e) => ({ value: e._id, label: `${e.key} · ${e.summary}` })), { value: 'none', label: 'No epic (remove)' }]} />
             {moving && <Spinner />}
             <button className="btn btn-ghost btn-sm" onClick={() => setSel_([])} title="Esc">Clear</button>
           </motion.div>

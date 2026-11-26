@@ -5,7 +5,7 @@ export const DEFAULT_ISSUE_TYPES: IssueTypeDef[] = [
   { key: 'epic', name: 'Epic', color: '#a78bfa', system: true },
   { key: 'story', name: 'Story', color: '#34d399', system: true },
   { key: 'task', name: 'Task', color: '#60a5fa', system: true },
-  { key: 'bug', name: 'Bug', color: '#f87171', system: false },
+  { key: 'bug', name: 'Bug', color: '#f87171', system: true }, // the four work types (Epic, Story, Task, Bug) are always available
   { key: 'subtask', name: 'Subtask', color: '#94a3b8', system: true },
 ];
 
