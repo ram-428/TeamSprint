@@ -2,7 +2,7 @@
 import { use } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts';
 import { useApi } from '@/lib/api';
-import { Card, CountUp, EmptyState, Skeleton, ErrorState } from '@/components/ui';
+import { Avatar, Card, CountUp, EmptyState, ProgressBar, Skeleton, ErrorState } from '@/components/ui';
 import { useProject } from '@/components/ProjectContext';
 
 const PAL = ['#7c5cff', '#22d3ee', '#f472b6', '#34d399', '#fbbf24', '#60a5fa', '#fb7185'];
@@ -11,6 +11,38 @@ const axis = { stroke: 'var(--text-faint)', tickLine: false, axisLine: false, fo
 
 function Chart({ title, sub, children, h = 260 }: { title: string; sub?: string; children: React.ReactElement; h?: number }) {
   return <Card className="p-5"><h3 className="text-[15px] font-semibold">{title}</h3>{sub && <p className="mb-3 text-xs text-muted">{sub}</p>}<div style={{ height: h }} className={sub ? '' : 'mt-3'}><ResponsiveContainer width="100%" height="100%">{children}</ResponsiveContainer></div></Card>;
+}
+
+type Row = { id: string; total: number; todo: number; inProgress: number; done: number; points: number; donePoints: number; pct: number };
+const fmtDate = (d?: string) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '');
+const STATE: Record<string, string> = { active: '!text-success', future: '!text-muted', closed: '!text-accent2' };
+
+/** One summary table: a name cell plus to do / in progress / done counts, points and a completion bar. */
+function Summary<T extends Row>({ title, sub, rows, name, empty }: { title: string; sub: string; rows: T[]; name: (r: T) => React.ReactNode; empty: string }) {
+  return (
+    <Card className="overflow-hidden">
+      <div className="px-5 pb-2 pt-4"><h3 className="text-[15px] font-semibold">{title}</h3><p className="text-xs text-muted">{sub}</p></div>
+      {!rows.length ? <p className="px-5 pb-5 text-[13px] text-muted">{empty}</p> : (
+        <div className="max-h-[360px] overflow-auto">
+          <table className="w-full min-w-[560px] text-[13px]">
+            <thead className="sticky top-0 bg-[var(--surface-solid)] text-left text-[11px] uppercase tracking-wider text-muted">
+              <tr><th className="px-5 py-2 font-semibold">Name</th><th className="px-2 py-2 text-right font-semibold">To do</th><th className="px-2 py-2 text-right font-semibold">In progress</th><th className="px-2 py-2 text-right font-semibold">Done</th><th className="px-2 py-2 text-right font-semibold">Total</th><th className="px-2 py-2 text-right font-semibold">Points</th><th className="w-[150px] px-5 py-2 font-semibold">Progress</th></tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id} className="border-t border-[var(--border)]">
+                  <td className="max-w-[240px] px-5 py-2.5">{name(r)}</td>
+                  <td className="px-2 text-right tabular-nums">{r.todo}</td><td className="px-2 text-right tabular-nums">{r.inProgress}</td><td className="px-2 text-right tabular-nums">{r.done}</td>
+                  <td className="px-2 text-right font-semibold tabular-nums">{r.total}</td><td className="px-2 text-right tabular-nums text-muted">{r.donePoints}/{r.points}</td>
+                  <td className="px-5"><div className="flex items-center gap-2"><ProgressBar value={r.pct} /><span className="w-9 shrink-0 text-right text-xs tabular-nums text-muted">{r.pct}%</span></div></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
 }
 
 export default function ReportsPage({ params }: { params: Promise<{ key: string }> }) {
@@ -46,6 +78,16 @@ export default function ReportsPage({ params }: { params: Promise<{ key: string 
           <Chart key={t} title={t} h={230}><PieChart><Pie data={d} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={3} cornerRadius={6} stroke="none" animationDuration={1000}>{d.map((_: any, i: number) => <Cell key={i} fill={PAL[i % PAL.length]} />)}</Pie><Tooltip {...tip} /><Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} /></PieChart></Chart>
         ))}
         <Chart title="Workload by assignee" sub="All issues"><BarChart data={r.byAssignee} layout="vertical" margin={{ left: 20 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} /><XAxis type="number" {...axis} allowDecimals={false} /><YAxis type="category" dataKey="name" {...axis} width={90} /><Tooltip {...tip} cursor={{ fill: 'var(--surface)' }} /><Bar dataKey="value" radius={[0, 8, 8, 0]} fill="#7c5cff" name="Issues" animationDuration={1000} /></BarChart></Chart>
+      </div>
+      <div className="grid gap-5 xl:grid-cols-2">
+        {project.type === 'scrum' && <Summary title="Sprint summary" sub="Progress and completion of each sprint · closed sprints use committed vs completed points" rows={r.sprintSummary} empty="No sprints yet."
+          name={(s: any) => <div className="min-w-0"><div className="flex items-center gap-2"><span className="truncate font-medium">{s.name}</span><span className={`chip shrink-0 capitalize ${STATE[s.state] || ''}`}>{s.state === 'future' ? 'Planned' : s.state}</span></div>{s.startDate && <div className="text-xs text-muted">{fmtDate(s.startDate)} – {fmtDate(s.endDate)}</div>}</div>} />}
+        <Summary title="Epic progress" sub="Work items linked to each epic" rows={r.epicSummary} empty="No epics in this project."
+          name={(e: any) => <div className="min-w-0"><div className="truncate font-medium" title={e.name}>{e.name}</div><div className="text-xs text-muted"><span className="key">{e.key}</span> · {e.status}</div></div>} />
+        <Summary title="Team summary" sub="Work items by owning team" rows={r.teamSummary} empty="No teams linked to this project."
+          name={(t: any) => <div className="flex min-w-0 items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: t.color || 'var(--text-faint)' }} /><span className="truncate font-medium">{t.name}</span></div>} />
+        <Summary title="User summary" sub="Work items by assignee" rows={r.userSummary} empty="No work items yet."
+          name={(u: any) => <div className="flex min-w-0 items-center gap-2"><Avatar user={u.user} size={22} /><span className="truncate font-medium">{u.name}</span></div>} />
       </div>
     </div>
   );
