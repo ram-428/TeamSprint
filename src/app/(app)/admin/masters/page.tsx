@@ -1,7 +1,7 @@
 'use client';
 import { PageHeader } from '@/components/ui';
 import { useMe } from '@/components/UserContext';
-import { Forbidden } from '@/components/AdminShared';
+import { Forbidden, SelectOrgFirst } from '@/components/AdminShared';
 import { MastersTab } from '@/components/MastersTab';
 
 export default function MastersPage() {
@@ -13,7 +13,7 @@ export default function MastersPage() {
   return (
     <div className="mx-auto max-w-[1180px]">
       <PageHeader title="Masters" subtitle={`Issue types and statuses used across ${me.orgName || 'your organization'}`} />
-      {isSuper && !orgId ? <Forbidden /> : <MastersTab key={orgId} orgId={orgId} />}
+      {isSuper && !orgId ? <SelectOrgFirst /> : <MastersTab key={orgId} orgId={orgId} />}
     </div>
   );
 }

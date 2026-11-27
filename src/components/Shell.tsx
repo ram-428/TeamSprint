@@ -5,8 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, FolderKanban, Search, Bell, Plus, Sun, Moon, Contrast, LogOut, Settings, Target, Gauge, ShieldCheck, Building2, ListChecks,
-  Command, Filter, Eye, X, UserCircle2, Menu, ChevronLeft, ChevronRight, Users,
-} from 'lucide-react';
+  Command, Filter, Eye, X, UserCircle2, Menu, ChevronLeft, ChevronRight, Users, KeyRound } from 'lucide-react';
 import clsx from 'clsx';
 import { Logo } from './Logo';
 import { UserProvider, type Me } from './UserContext';
@@ -77,7 +76,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   ];
   const admin: NavItem[] = [
     ...(me.platformRole === 'super_admin' ? [{ href: '/admin/platform', label: 'Platform', icon: ShieldCheck }] : []),
-    ...(me.role === 'org_admin' || me.platformRole === 'super_admin' ? [{ href: '/admin/org', label: 'Organization', icon: Building2 }, { href: '/admin/masters', label: 'Masters', icon: ListChecks }] : []),
+    ...(me.role === 'org_admin' || me.platformRole === 'super_admin' ? [{ href: '/admin/org', label: 'Organization', icon: Building2 }, { href: '/admin/masters', label: 'Masters', icon: ListChecks }, { href: '/admin/permissions', label: 'Permissions', icon: KeyRound }] : []),
   ];
 
   const exitImpersonation = async () => { try { await api('/api/admin/platform/impersonate', { method: 'DELETE' }); window.location.href = '/admin/platform'; } catch (e) { toast.error(errMsg(e)); } };

@@ -1,44 +1,43 @@
 import type { AuthUser } from './auth';
+import { ADMIN_ROLE, DEFAULT_ROLES, PERMISSION_KEYS } from '../lib/permissions';
+import { schemeFor } from './accessCache';
 
-export const PERMS = {
-  project_admin: ['project.view', 'project.edit', 'project.manage_members', 'project.manage_workflow', 'project.manage_automation',
-    'issue.create', 'issue.edit_any', 'issue.delete_any', 'issue.assign', 'issue.transition', 'comment.add', 'comment.delete_any',
-    'worklog.add', 'sprint.manage', 'board.manage'],
-  developer: ['project.view', 'issue.create', 'issue.edit_any', 'issue.assign', 'issue.transition', 'comment.add', 'worklog.add', 'sprint.manage', 'board.manage'],
-  tester: ['project.view', 'issue.create', 'issue.edit_any', 'issue.assign', 'issue.transition', 'comment.add', 'worklog.add'],
-  reporter: ['project.view', 'issue.create', 'issue.edit_own', 'issue.transition_own', 'comment.add'],
-  viewer: ['project.view'],
-} as const satisfies Record<string, readonly string[]>;
+/** Role keys every org starts with. Orgs may add custom roles (ProjectRoleMaster); members store the role key. */
+export type ProjectRole = string;
+export const PROJECT_ROLES = DEFAULT_ROLES.map((r) => r.key);
 
-export type ProjectRole = keyof typeof PERMS;
-export const PROJECT_ROLES = Object.keys(PERMS) as ProjectRole[];
-
-export type ProjectLike = { visibility?: string; members?: { userId: any; role: string }[]; orgId?: any };
+export type ProjectLike = { visibility?: string; members?: { userId: any; role: string }[]; orgId?: any; leadId?: any; permissionSchemeId?: any };
 
 export function projectRole(u: AuthUser, p: ProjectLike): ProjectRole | null {
   if (!u.orgId || String(p.orgId) !== u.orgId) return null;
-  if (u.role === 'org_admin') return 'project_admin';
+  if (u.role === 'org_admin') return ADMIN_ROLE;
   // Everyone else (members, guests) only sees projects they have been explicitly added to.
   const m = p.members?.find((x) => String(x.userId) === u.id);
-  return m ? (m.role as ProjectRole) : null;
+  return m ? m.role : null;
 }
 
-/** Central permission check. `owns` = the user reported/owns the target resource. */
+/**
+ * Central permission check, driven by the project's permission scheme (Jira-style).
+ * `owns` = the user reported / is assigned the target issue, which unlocks "own issues only" grants.
+ * Org admins hold the Administrator role in every project, and that role always has every permission.
+ */
 export function can(u: AuthUser, perm: string, p?: ProjectLike, owns = false): boolean {
   if (perm.startsWith('platform.')) return u.platformRole === 'super_admin';
   if (perm.startsWith('org.')) return !!u.orgId && u.role === 'org_admin';
   if (!p) return false;
   const r = projectRole(u, p);
   if (!r) return false;
-  const set = PERMS[r] as readonly string[];
-  if (set.includes(perm)) return true;
-  if (owns && perm === 'issue.edit_any' && set.includes('issue.edit_own')) return true;
-  if (owns && perm === 'issue.transition' && set.includes('issue.transition_own')) return true;
+  if (r === ADMIN_ROLE) return true;
+  const g = schemeFor(String(p.orgId), p.permissionSchemeId ? String(p.permissionSchemeId) : null).get(perm);
+  if (!g) return false;
+  if (g.roles.has(r)) return true;
+  if (owns && g.ownRoles.has(r)) return true;
+  if (g.lead && p.leadId && String(p.leadId) === u.id) return true;
   return false;
 }
 
+/** What the UI may show for a project (per-issue "own" rights are resolved on the issue itself). */
 export function abilities(u: AuthUser, p: ProjectLike) {
   const r = projectRole(u, p);
-  const set = new Set<string>(r ? (PERMS[r] as readonly string[]) : []);
-  return { role: r, ...Object.fromEntries(['project.edit', 'project.manage_members', 'issue.create', 'issue.edit_any', 'issue.delete_any', 'issue.assign', 'issue.transition', 'comment.add', 'worklog.add', 'sprint.manage', 'board.manage', 'project.manage_workflow', 'project.manage_automation'].map((k) => [k, set.has(k) || (k === 'issue.edit_any' && set.has('issue.edit_own')) || (k === 'issue.transition' && set.has('issue.transition_own'))])) } as Record<string, any>;
+  return { role: r, ...Object.fromEntries(PERMISSION_KEYS.map((k) => [k, can(u, k, p, true)])) } as Record<string, any>;
 }

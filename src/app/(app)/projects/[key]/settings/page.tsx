@@ -7,10 +7,12 @@ import { Avatar, Card, ConfirmDialog, Field, Select, Spinner, Tabs } from '@/com
 import { useProject } from '@/components/ProjectContext';
 import { useMe } from '@/components/UserContext';
 import { ProjectTeamsSettings } from './ProjectTeamsSettings';
+import { useRoleOptions } from '@/components/useRoleOptions';
+import { PermissionSchemePanel } from './PermissionSchemePanel';
 
-const ROLES = [{ value: 'project_admin', label: 'Project Admin' }, { value: 'developer', label: 'Developer' }, { value: 'tester', label: 'Tester' }, { value: 'reporter', label: 'Reporter' }, { value: 'viewer', label: 'Viewer' }];
 
 export default function ProjectSettings({ params }: { params: Promise<{ key: string }> }) {
+  const ROLES = useRoleOptions();
   const { key } = use(params); const { project, reload } = useProject(); const ab = project.abilities; const me = useMe(); const router = useRouter();
   const [tab, setTab] = useState<'details' | 'access' | 'teams' | 'board' | 'danger'>('details');
   const [f, setF] = useState({ name: project.name, description: project.description || '', visibility: project.visibility }); const [busy, setBusy] = useState(false); const [errs, setErrs] = useState<Record<string, string>>({});
@@ -45,6 +47,7 @@ export default function ProjectSettings({ params }: { params: Promise<{ key: str
         </Field>
         <div className="flex justify-end"><button className="btn btn-primary" disabled={!canEdit || busy} onClick={saveDetails}>{busy && <Spinner />}Save changes</button></div></Card>}
       {tab === 'access' && <Card className="p-6">
+        {(me.role === 'org_admin' || me.platformRole === 'super_admin') && <PermissionSchemePanel projectKey={key} schemeId={project.permissionSchemeId} orgId={me.platformRole === 'super_admin' ? me.orgId ?? undefined : undefined} onSaved={reload} />}
         {ab['project.manage_members'] && <div className="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-[var(--border)] p-4"><div className="min-w-[200px] flex-1"><label className="label">Add member</label><Select aria-label="User to add" value={addUser} onChange={setAddUser} options={[{ value: '', label: 'Select a person…' }, ...nonMembers.map((u) => ({ value: u._id, label: `${u.name} — ${u.title || u.role}` }))]} /></div><div className="w-44"><label className="label">Role</label><Select aria-label="Role" value={addRole} onChange={setAddRole} options={ROLES} /></div><button className="btn btn-primary" disabled={!addUser} onClick={async () => { await setRole(addUser, addRole); setAddUser(''); }}><UserPlus size={15} /> Add</button></div>}
         <div className="divide-y divide-[var(--border)]">{project.members.map((m: any) => (
           <div key={m._id} className="flex items-center gap-3 py-3"><Avatar user={m} size={36} /><div className="min-w-0 flex-1"><div className="font-medium">{m.name} {m._id === me.id && <span className="chip ml-1">you</span>}</div><div className="truncate text-xs text-muted">{m.email}</div></div>

@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { route, AppError, audit } from '@/server/api';
-import { Project, User, Issue } from '@/server/models';
+import { Project, User, Issue, PermissionScheme } from '@/server/models';
 import { loadProject, requirePerm } from '@/server/domain';
-import { abilities } from '@/server/rbac';
+import { abilities, can } from '@/server/rbac';
+import { reloadAccess } from '@/server/access';
 
 export const GET = route(async (_req, { user, params }) => {
   const p = await loadProject(user, params.key);
@@ -19,6 +20,7 @@ const patchSchema = z.object({
   components: z.array(z.string()).optional(), wip: z.record(z.string(), z.number().int().min(0)).optional(),
   versions: z.array(z.object({ id: z.string(), name: z.string(), releaseDate: z.string().optional(), released: z.boolean().optional() })).optional(),
   starred: z.boolean().optional(),
+  permissionSchemeId: z.string().regex(/^[0-9a-f]{24}$/i).nullable().optional(), // null = org default
 });
 
 export const PATCH = route(async (req, { user, params }) => {
@@ -28,7 +30,16 @@ export const PATCH = route(async (req, { user, params }) => {
     await Project.updateOne({ _id: p._id }, d.starred ? { $addToSet: { starredBy: user.id } } : { $pull: { starredBy: user.id } });
     if (Object.keys(d).length === 1) return { done: true };
   }
-  const { starred, ...rest } = d; void starred;
+  const { starred, permissionSchemeId, ...rest } = d; void starred;
+  if (permissionSchemeId !== undefined) {
+    // Choosing a project's permission scheme is an org-admin task, as in Jira.
+    if (!can(user, 'org.manage_members')) throw new AppError(403, 'FORBIDDEN', 'Only organization admins can change the permission scheme');
+    if (permissionSchemeId && !(await PermissionScheme.exists({ _id: permissionSchemeId, orgId: p.orgId }))) throw new AppError(400, 'BAD_SCHEME', 'Permission scheme not found');
+    await Project.updateOne({ _id: p._id }, permissionSchemeId ? { permissionSchemeId } : { $unset: { permissionSchemeId: 1 } });
+    await audit(user, 'project.permission_scheme_changed', p.key, { permissionSchemeId });
+    await reloadAccess(String(p.orgId));
+    if (!Object.keys(rest).length) return { done: true };
+  }
   if (Object.keys(rest).length) {
     if (rest.wip) requirePerm(user, 'board.manage', p);
     if (!rest.wip || rest.leadId !== undefined) requirePerm(user, 'project.edit', p);

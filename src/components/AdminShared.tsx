@@ -1,8 +1,13 @@
 'use client';
 import { useState } from 'react';
-import { ShieldAlert } from 'lucide-react';
+import { Building2, ShieldAlert } from 'lucide-react';
 import { useApi } from '@/lib/api';
 import { Card, EmptyState, Pagination, Skeleton, usePaged } from '@/components/ui';
+
+/** Shown to a platform super admin on an org-scoped admin page before an organization is picked in the top bar. */
+export function SelectOrgFirst() {
+  return <div className="mx-auto max-w-md py-20 text-center"><div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--accent-soft)] text-accent"><Building2 size={36} /></div><h1 className="text-2xl font-semibold">Select an organization</h1><p className="mt-2 text-muted">This page shows one organization’s settings. Choose an organization in the selector at the top of the page to continue.</p></div>;
+}
 
 export function Forbidden() {
   return <div className="mx-auto max-w-md py-20 text-center"><div className="float mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-3xl bg-danger/15 text-danger"><ShieldAlert size={36} /></div><h1 className="text-2xl font-semibold">403 — Access denied</h1><p className="mt-2 text-muted">You do not have permission to view this page.</p></div>;

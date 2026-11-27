@@ -4,7 +4,7 @@ import { Pencil, Plus, Trash2, UserCheck, UserX } from 'lucide-react';
 import { api, errMsg, toast, useApi, ApiError } from '@/lib/api';
 import { Avatar, Card, ConfirmDialog, Field, Modal, PageHeader, Pagination, Select, Skeleton, Spinner, Tabs, relTime } from '@/components/ui';
 import { useMe } from '@/components/UserContext';
-import { Forbidden, AuditTab } from '@/components/AdminShared';
+import { Forbidden, AuditTab, SelectOrgFirst } from '@/components/AdminShared';
 const ROLES = [{ value: 'member', label: 'Member' }, { value: 'guest', label: 'Guest' }];
 
 export default function OrgAdmin() {
@@ -17,7 +17,7 @@ export default function OrgAdmin() {
     <div className="mx-auto max-w-[1180px]">
       <PageHeader title={me.orgName || 'Organization'} subtitle="Members, roles and audit trail" />
       <div className="mb-5"><Tabs id="orgtabs" value={tab} onChange={setTab} tabs={[{ id: 'members', label: 'Members' }, { id: 'audit', label: 'Audit log' }]} /></div>
-      {isSuper && !orgId ? <Forbidden /> : tab === 'members' ? <Members key={orgId} orgId={orgId} /> : <AuditTab key={orgId} scope="org" orgId={orgId} />}
+      {isSuper && !orgId ? <SelectOrgFirst /> : tab === 'members' ? <Members key={orgId} orgId={orgId} /> : <AuditTab key={orgId} scope="org" orgId={orgId} />}
     </div>
   );
 }
