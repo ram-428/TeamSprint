@@ -3,6 +3,7 @@ import { route, AppError, audit, targetOrg } from '@/server/api';
 import { User, Org, Project } from '@/server/models';
 import { hash } from '@/server/auth';
 import { sendInviteMail, siteUrl } from '@/server/mail';
+import { assertSeat } from '@/server/plan';
 
 export const GET = route(async (req, { user }) => {
   const orgId = targetOrg(user, req);
@@ -20,7 +21,7 @@ export const POST = route(async (req, { user }) => {
   const d = schema.parse(await req.json());
   const org = await Org.findById(orgId).lean<any>();
   if (!org) throw new AppError(404, 'NOT_FOUND', 'Organization not found');
-  if (user.platformRole !== 'super_admin' && (await User.countDocuments({ orgId })) >= (org?.maxUsers ?? 100)) throw new AppError(402, 'PLAN_LIMIT', 'User limit reached for your plan');
+  await assertSeat(orgId);
   if (await User.exists({ email: d.email.toLowerCase() })) throw new AppError(409, 'EMAIL_TAKEN', 'This email is already registered', { email: 'Already registered' });
   const tmp = 'Welcome-' + Math.random().toString(36).slice(2, 8) + '1A';
   const u = await User.create({ ...d, passwordHash: await hash(tmp), orgId, color: COLORS[Math.floor(Math.random() * COLORS.length)] });

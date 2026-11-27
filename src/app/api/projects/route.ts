@@ -1,3 +1,4 @@
+import { assertProjectSlot } from '@/server/plan';
 import { z } from 'zod';
 import { route, AppError, audit } from '@/server/api';
 import { Project, Issue, User, Org, Sprint } from '@/server/models';
@@ -41,10 +42,8 @@ const schema = z.object({
 export const POST = route(async (req, { user }) => {
   if (!user.orgId || !(user.role === 'org_admin' || user.role === 'member')) throw new AppError(403, 'FORBIDDEN', 'You cannot create projects');
   const d = schema.parse(await req.json());
-  const org = await Org.findById(user.orgId).lean<any>();
-  // Deleted projects are only archived, so they must not count against the plan limit.
-  // Plan limits don't apply to a super admin.
-  if (user.platformRole !== 'super_admin' && (await Project.countDocuments({ orgId: user.orgId, archived: { $ne: true } })) >= (org?.maxProjects ?? 50)) throw new AppError(402, 'PLAN_LIMIT', 'Project limit reached for your plan');
+  // Plan limit (archived projects don't count). Applies to everyone, platform admins included.
+  await assertProjectSlot(user.orgId);
   if (await Project.exists({ orgId: user.orgId, key: d.key })) throw new AppError(409, 'KEY_TAKEN', 'That key is already used', { key: 'Key already in use' });
   const members = [{ userId: user.id, role: 'project_admin' }];
   const extra = await User.find({ _id: { $in: d.memberIds }, orgId: user.orgId }).select('_id role').lean<any[]>();
