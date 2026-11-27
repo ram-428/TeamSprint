@@ -88,6 +88,9 @@ export const Issue = model<any>('Issue', issueSchema);
 
 const commentSchema = S({
   orgId: oid, issueId: { type: oid, index: true }, authorId: oid, body: String, internal: Boolean, mentions: [oid],
+  // Files attached to the comment (same shape and Cloudinary folder as issue attachments). `editedAt` is set when the author edits it.
+  attachments: [{ id: String, name: String, url: String, publicId: String, resourceType: String, kind: String, format: String, bytes: Number, width: Number, height: Number, uploadedBy: String, createdAt: String, _id: false }],
+  editedAt: Date,
 }, opts);
 commentSchema.index({ issueId: 1, createdAt: 1 });
 export const Comment = model<any>('Comment', commentSchema);

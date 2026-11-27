@@ -3,13 +3,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MoreHorizontal, Eye, EyeOff, ThumbsUp, Flag, Trash2, Link2, Clock, X, ChevronRight, Send, GitBranch, Zap, Plus, Check, Lock } from 'lucide-react';
+import { MoreHorizontal, Eye, EyeOff, ThumbsUp, Flag, Trash2, Link2, Clock, X, ChevronRight, Send, GitBranch, Zap, Plus, Check, Lock, Pencil, Paperclip } from 'lucide-react';
 import clsx from 'clsx';
 import { api, errMsg, invalidate, toast, useApi } from '@/lib/api';
 import { Avatar, ConfirmDialog, Dropdown, MenuItem, PriorityIcon, ProgressBar, Select, Skeleton, Spinner, StatusChip, Tabs, TypeIcon, fmtDuration, relTime, ErrorState } from '../ui';
 import { mdToHtml } from '@/lib/md';
 import { useMe } from '../UserContext';
 import { AttachmentGallery, AttachmentPicker } from '../Attachments';
+import { MAX_PER_COMMENT, type Attachment } from '@/lib/attachments';
 import { TeamPicker, TeamIcon } from '../TeamPicker';
 
 const PRIOS = ['Highest', 'High', 'Medium', 'Low', 'Lowest'];
@@ -294,37 +295,80 @@ function AddSubtask({ parent, project }: { parent: any; project: any }) {
 }
 
 function Comments({ data, issueKey, reload, users }: { data: any; issueKey: string; reload: () => void; users: any[] }) {
-  const me = useMe(); const [body, setBody] = useState(''); const [busy, setBusy] = useState(false); const [mention, setMention] = useState<string | null>(null);
-  const ta = useRef<HTMLTextAreaElement>(null);
-  const canAdd = data.abilities['comment.add'];
-  const matches = mention !== null ? users.filter((u) => u.name.toLowerCase().includes(mention.toLowerCase())).slice(0, 5) : [];
-  const onChange = (v: string) => { setBody(v); const m = /@([A-Za-z]*)$/.exec(v); setMention(m ? m[1] : null); };
-  async function post() {
-    if (!body.trim()) return; setBusy(true);
-    try { await api(`/api/issues/${issueKey}/comments`, { body: { body } }); setBody(''); await reload(); } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
+  const me = useMe(); const canAdd = data.abilities['comment.add'];
+  const [composerKey, setComposerKey] = useState(0); // remount = clear the composer after posting
+  const [editing, setEditing] = useState<string | null>(null); const [del, setDel] = useState<any>(null);
+  async function post(body: string, attachments: Attachment[]) {
+    await api(`/api/issues/${issueKey}/comments`, { body: { body, attachments: attachments.map(toUpload) } });
+    setComposerKey((k) => k + 1); await reload();
+  }
+  async function save(c: any, body: string, attachments: Attachment[]) {
+    const keep = new Set((c.attachments || []).map((a: Attachment) => a.id));
+    await api(`/api/issues/${issueKey}/comments?id=${c._id}`, { method: 'PATCH', body: { body, keepAttachmentIds: attachments.filter((a) => keep.has(a.id)).map((a) => a.id), attachments: attachments.filter((a) => !keep.has(a.id)).map(toUpload) } });
+    setEditing(null); await reload(); toast.success('Comment updated');
   }
   return (
     <div className="space-y-4">
       {canAdd ? (
         <div className="flex gap-3"><Avatar user={me} size={32} />
-          <div className="relative min-w-0 flex-1">
-            <textarea ref={ta} aria-label="Add a comment" className="input min-h-[74px]" placeholder="Add a comment… use @ to mention a teammate" value={body} onChange={(e) => onChange(e.target.value)} onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') post(); }} />
-            <AnimatePresence>{matches.length > 0 && <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="glass-solid absolute z-20 mt-1 w-60 rounded-xl p-1">{matches.map((u) => <button key={u._id} className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-[var(--surface-2)]" onClick={() => { onChange(body.replace(/@[A-Za-z]*$/, `@${u.name} `)); ta.current?.focus(); }}><Avatar user={u} size={22} />{u.name}</button>)}</motion.div>}</AnimatePresence>
-            <div className="mt-2 flex items-center justify-between"><span className="text-xs text-faint">Ctrl + Enter to send</span><button className="btn btn-primary btn-sm" disabled={busy || !body.trim()} onClick={post}>{busy ? <Spinner size={13} /> : <><Send size={13} /> Comment</>}</button></div>
-          </div>
+          <CommentComposer key={composerKey} users={users} submitLabel="Comment" onSubmit={post} />
         </div>
       ) : <p className="flex items-center gap-2 text-muted"><Lock size={13} /> You have read-only access to this project.</p>}
       <AnimatePresence initial={false}>
         {data.comments.length === 0 && <p className="py-6 text-center text-muted">No comments yet. Start the conversation.</p>}
         {[...data.comments].reverse().map((c: any) => (
-          <motion.div key={c._id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="group flex gap-3">
+          <motion.div key={c._id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="flex gap-3">
             <Avatar user={c.author} size={32} />
-            <div className="min-w-0 flex-1"><div className="flex items-baseline gap-2"><span className="font-semibold">{c.author?.name || 'Former member'}</span><span className="text-xs text-faint">{relTime(c.createdAt)}</span>
-              {c.canDelete && <button className="ml-auto text-xs text-faint opacity-0 transition-opacity hover:text-danger group-hover:opacity-100" onClick={async () => { try { await api(`/api/issues/${issueKey}/comments?id=${c._id}`, { method: 'DELETE' }); reload(); } catch (e) { toast.error(errMsg(e)); } }}>Delete</button>}</div>
-              <div className="prose-orbit mt-1 text-[14px]" dangerouslySetInnerHTML={{ __html: mdToHtml(c.body) }} /></div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-2"><span className="font-semibold">{c.author?.name || 'Former member'}</span><span className="text-xs text-faint">{relTime(c.createdAt)}</span>
+                {c.editedAt && <span className="text-xs text-faint" title={`Edited ${new Date(c.editedAt).toLocaleString()}`}>(edited)</span>}</div>
+              {editing === c._id
+                ? <div className="mt-1.5"><CommentComposer users={users} initialBody={c.body} initialFiles={c.attachments || []} submitLabel="Save" onSubmit={(b, a) => save(c, b, a)} onCancel={() => setEditing(null)} /></div>
+                : <>
+                  {c.body && <div className="prose-orbit mt-1 text-[14px]" dangerouslySetInnerHTML={{ __html: mdToHtml(c.body) }} />}
+                  {c.attachments?.length > 0 && <div className="mt-2"><AttachmentGallery compact items={c.attachments} /></div>}
+                  {(c.canEdit || c.canDelete) && <div className="mt-1.5 flex items-center gap-3 text-xs font-medium text-muted">
+                    {c.canEdit && <button className="inline-flex items-center gap-1 hover:text-accent2" onClick={() => setEditing(c._id)}><Pencil size={12} /> Edit</button>}
+                    {c.canDelete && <button className="inline-flex items-center gap-1 hover:text-danger" onClick={() => setDel(c)}><Trash2 size={12} /> Delete</button>}
+                  </div>}
+                </>}
+            </div>
           </motion.div>
         ))}
       </AnimatePresence>
+      <ConfirmDialog open={!!del} onClose={() => setDel(null)} danger title="Delete comment" confirmLabel="Delete"
+        message={<>Delete this comment{del?.attachments?.length ? ` and its ${del.attachments.length} attachment${del.attachments.length > 1 ? 's' : ''}` : ''}? This cannot be undone.</>}
+        onConfirm={async () => { try { await api(`/api/issues/${issueKey}/comments?id=${del._id}`, { method: 'DELETE' }); setDel(null); await reload(); toast.success('Comment deleted'); } catch (e) { toast.error(errMsg(e)); } }} />
+    </div>
+  );
+}
+
+/** Metadata the server needs for a newly uploaded file (it re-validates and assigns ids). */
+const toUpload = ({ name, url, publicId, resourceType, format, bytes, width, height }: Attachment) => ({ name, url, publicId, resourceType, format, bytes, width, height });
+
+/** Comment editor used for new comments and for editing one: text with @mentions plus optional attachments. */
+function CommentComposer({ users, initialBody = '', initialFiles = [], submitLabel, onSubmit, onCancel }: { users: any[]; initialBody?: string; initialFiles?: Attachment[]; submitLabel: string; onSubmit: (body: string, files: Attachment[]) => Promise<void>; onCancel?: () => void }) {
+  const [body, setBody] = useState(initialBody); const [files, setFiles] = useState<Attachment[]>(initialFiles);
+  const [attach, setAttach] = useState(initialFiles.length > 0); const [busy, setBusy] = useState(false); const [mention, setMention] = useState<string | null>(null);
+  const ta = useRef<HTMLTextAreaElement>(null);
+  const matches = mention !== null ? users.filter((u) => u.name.toLowerCase().includes(mention.toLowerCase())).slice(0, 5) : [];
+  const onChange = (v: string) => { setBody(v); const m = /@([A-Za-z]*)$/.exec(v); setMention(m ? m[1] : null); };
+  const canSend = !busy && (!!body.trim() || files.length > 0);
+  async function submit() {
+    if (!canSend) return; setBusy(true);
+    try { await onSubmit(body.trim(), files); } catch (e) { toast.error(errMsg(e)); } finally { setBusy(false); }
+  }
+  return (
+    <div className="relative min-w-0 flex-1">
+      <textarea ref={ta} autoFocus={!!onCancel} aria-label={onCancel ? 'Edit comment' : 'Add a comment'} className="input min-h-[74px]" placeholder="Add a comment… use @ to mention a teammate" value={body} onChange={(e) => onChange(e.target.value)} onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit(); if (e.key === 'Escape' && onCancel) onCancel(); }} />
+      <AnimatePresence>{matches.length > 0 && <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="glass-solid absolute z-20 mt-1 w-60 rounded-xl p-1">{matches.map((u) => <button key={u._id} className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left hover:bg-[var(--surface-2)]" onClick={() => { onChange(body.replace(/@[A-Za-z]*$/, `@${u.name} `)); ta.current?.focus(); }}><Avatar user={u} size={22} />{u.name}</button>)}</motion.div>}</AnimatePresence>
+      {attach && <div className="mt-2"><AttachmentPicker compact max={MAX_PER_COMMENT} files={files} disabled={busy} onUploaded={(a) => setFiles((x) => [...x, ...a])} onRemove={(a) => setFiles((x) => x.filter((y) => y.id !== a.id))} /></div>}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button type="button" className={clsx('btn btn-ghost btn-sm', attach && 'text-accent2')} onClick={() => setAttach((v) => !v)} aria-pressed={attach} title="Attach files"><Paperclip size={14} /> Attach{files.length > 0 && ` (${files.length})`}</button>
+        <span className="mr-auto text-xs text-faint">Ctrl + Enter to {onCancel ? 'save' : 'send'}</span>
+        {onCancel && <button type="button" className="btn btn-sm" disabled={busy} onClick={onCancel}>Cancel</button>}
+        <button type="button" className="btn btn-primary btn-sm" disabled={!canSend} onClick={submit}>{busy ? <Spinner size={13} /> : <>{!onCancel && <Send size={13} />} {submitLabel}</>}</button>
+      </div>
     </div>
   );
 }

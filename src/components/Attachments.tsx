@@ -49,7 +49,7 @@ export function AttachmentPicker({ files, onUploaded, onRemove, disabled, max = 
 
   async function handle(list: FileList | File[] | null) {
     const arr = Array.from(list || []); if (!arr.length || disabled) return;
-    if (arr.length > room) { toast.error(`You can attach up to ${max} files per issue`); arr.length = Math.max(0, room); }
+    if (arr.length > room) { toast.error(`You can attach up to ${max} files here`); arr.length = Math.max(0, room); }
     const rows = arr.map((f) => ({ tmp: crypto.randomUUID(), f }));
     setPending((p) => [...p, ...rows.map((r) => ({ tmp: r.tmp, name: r.f.name, size: r.f.size, pct: 0 }))]);
     const done: Attachment[] = [];
@@ -114,12 +114,35 @@ function Thumb({ a, size }: { a: Attachment; size: number }) {
 }
 
 /* ───────── gallery shown on the issue page ───────── */
-export function AttachmentGallery({ items, canDelete, onDelete }: { items: Attachment[]; canDelete?: boolean; onDelete?: (a: Attachment) => void }) {
+export function AttachmentGallery({ items, canDelete, onDelete, compact }: { items: Attachment[]; canDelete?: boolean; onDelete?: (a: Attachment) => void; compact?: boolean }) {
   const [view, setView] = useState<Attachment | null>(null);
   const media = items.filter((a) => a.kind !== 'document'); const docs = items.filter((a) => a.kind === 'document');
   return (
-    <div className="space-y-3">
-      {media.length > 0 && (
+    <div className={compact ? 'space-y-2' : 'space-y-3'}>
+      {/* compact (comments): small thumbnail tiles in one wrapping row */}
+      {compact && media.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {media.map((a) => (
+            <button key={a.id} type="button" title={a.name} aria-label={`Open ${a.name}`} onClick={() => setView(a)}
+              className="group relative h-16 w-24 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--surface-2)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={thumbUrl(a, 192)} alt={a.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              {a.kind === 'video' && <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-white"><Play size={16} fill="currentColor" /></span>}
+            </button>
+          ))}
+        </div>
+      )}
+      {compact && docs.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {docs.map((a) => (
+            <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" title={`${a.name} · ${fmtBytes(a.bytes)}`}
+              className="flex max-w-[220px] items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] py-1 pl-1 pr-2.5 text-[12.5px] hover:bg-[var(--surface-2)]">
+              <Thumb a={a} size={26} /><span className="truncate">{a.name}</span>
+            </a>
+          ))}
+        </div>
+      )}
+      {!compact && media.length > 0 && (
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {media.map((a) => (
             <div key={a.id} className="group relative overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-2)]">
@@ -134,7 +157,7 @@ export function AttachmentGallery({ items, canDelete, onDelete }: { items: Attac
           ))}
         </div>
       )}
-      {docs.length > 0 && (
+      {!compact && docs.length > 0 && (
         <ul className="space-y-2">
           {docs.map((a) => (
             <li key={a.id} className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2.5">

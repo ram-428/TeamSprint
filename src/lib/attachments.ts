@@ -12,6 +12,7 @@ export const ALLOWED_EXT = [...IMAGE_EXT, ...VIDEO_EXT, ...DOC_EXT];
 
 export const MAX_BYTES: Record<AttachmentKind, number> = { image: 10 * 1024 ** 2, video: 50 * 1024 ** 2, document: 10 * 1024 ** 2 };
 export const MAX_PER_ISSUE = 20;
+export const MAX_PER_COMMENT = 10;
 
 export const extOf = (name: string) => (name.split('.').pop() || '').toLowerCase();
 export function kindOfExt(ext: string): AttachmentKind | null {

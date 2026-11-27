@@ -23,7 +23,7 @@ export const GET = route(async (_req, { user, params }) => {
   const ab = abilities(user, project);
   return {
     issue: h, project: { _id: project._id, key: project.key, name: project.name, type: project.type, statuses: project.statuses, components: project.components, versions: project.versions },
-    comments: comments.filter((c) => !c.internal || ab.role !== 'viewer').map((c) => ({ ...c, author: u(c.authorId), canDelete: can(user, 'comment.delete_any', project) || String(c.authorId) === user.id })),
+    comments: comments.filter((c) => !c.internal || ab.role !== 'viewer').map((c) => ({ ...c, author: u(c.authorId), canDelete: can(user, 'comment.delete_any', project) || String(c.authorId) === user.id, canEdit: String(c.authorId) === user.id && can(user, 'comment.add', project) })),
     activity: activity.map((a) => ({ ...a, actor: u(a.actorId) })),
     worklogs: worklogs.map((w) => ({ ...w, user: u(w.userId) })),
     children: await hydrate(children), epic, sprint,
