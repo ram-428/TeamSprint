@@ -1,14 +1,18 @@
 import { z } from 'zod';
 import { route, forbidden, AppError, audit, oid } from '@/server/api';
+import { planLimits } from '@/lib/plans';
 import { Org, User, Team, Project, Issue, Comment, Worklog, Sprint, Activity, Notification, Goal, SavedFilter, Automation } from '@/server/models';
 
 export const PATCH = route(async (req, { user, params }) => {
   if (user.platformRole !== 'super_admin') throw forbidden();
   const b = z.object({ name: z.string().trim().min(2, 'Name is required').max(80).optional(), status: z.enum(['active', 'suspended']).optional(), plan: z.enum(['free', 'pro', 'enterprise']).optional(), maxUsers: z.number().int().min(1).optional(), maxProjects: z.number().int().min(1).optional() }).parse(await req.json());
-  const o = await Org.findByIdAndUpdate(oid(params.id), b, { new: true });
+  // Picking a plan applies that plan's limits, unless custom limits are sent with it (Edit dialog).
+  const set: any = { ...b };
+  if (b.plan) { const l = planLimits(b.plan); set.maxUsers = b.maxUsers ?? l.maxUsers; set.maxProjects = b.maxProjects ?? l.maxProjects; }
+  const o = await Org.findByIdAndUpdate(oid(params.id), set, { new: true });
   if (!o) throw new AppError(404, 'NOT_FOUND', 'Organization not found');
   if (b.status === 'suspended') await User.updateMany({ orgId: o._id, platformRole: { $ne: 'super_admin' } }, { $inc: { tokenVersion: 1 } }); // kicks everyone out
-  await audit(user, 'platform.org_updated', o.name, b);
+  await audit(user, 'platform.org_updated', o.name, set);
   return o;
 });
 

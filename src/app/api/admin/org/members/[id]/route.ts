@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { route, forbidden, AppError, audit, oid, targetOrg } from '@/server/api';
 import { User, Issue, Project } from '@/server/models';
+import { assertSeat } from '@/server/plan';
 
 export const PATCH = route(async (req, { user, params }) => {
   const orgId = targetOrg(user, req);
@@ -17,6 +18,7 @@ export const PATCH = route(async (req, { user, params }) => {
   if (b.name) u.name = b.name;
   if (b.role) u.role = b.role;
   if (b.title !== undefined) u.title = b.title;
+  if (b.status === 'active' && u.status === 'deactivated') await assertSeat(orgId);
   if (b.status) {
     u.status = b.status; u.tokenVersion = (u.tokenVersion || 0) + 1;
     if (b.status === 'deactivated') await Issue.updateMany({ assigneeId: u._id, statusCategory: { $ne: 'done' } }, { $unset: { assigneeId: 1 } });

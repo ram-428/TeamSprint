@@ -30,6 +30,7 @@ function Members({ orgId }: { orgId: string }) {
   async function patch(id: string, body: any) { try { await api(`/api/admin/org/members/${id}${qs}`, { method: 'PATCH', body }); reload(); toast.success('Member updated'); } catch (e) { toast.error(errMsg(e)); reload(); } }
   return (
     <div>
+      <PlanCard key={data?.length ?? 0} qs={qs} />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><input className="input !w-full sm:!w-72" placeholder="Search members…" aria-label="Search members" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} /><button className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={15} /> Invite member</button></div>
       <Card className="overflow-x-auto"><table className="w-full min-w-[760px] text-[13.5px]"><thead className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wider text-muted"><tr><th className="p-4">Member</th><th>Role</th><th>Projects</th><th>Created</th><th>Last active</th><th>Status</th><th className="pr-4 text-right">Action</th></tr></thead>
         <tbody>{!data ? <tr><td colSpan={7} className="p-6"><Skeleton className="h-20" /></td></tr> : rows.map((u) => <tr key={u._id} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]"><td className="p-3"><div className="flex items-center gap-2.5"><Avatar user={u} size={32} /><div><div className="font-medium">{u.name}{u._id === me.id && <span className="chip ml-2">you</span>}</div><div className="text-xs text-faint">{u.email}</div></div></div></td>
@@ -59,4 +60,17 @@ function Invite({ qs, open, onClose, onDone }: { qs: string; open: boolean; onCl
   return <Modal open={open} onClose={onClose} title="Invite member" width={480} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={go}>{busy && <Spinner />}Send invite</button></>}>
     <div className="space-y-4"><Field label="Full name" error={errs.name}><input placeholder="e.g. Priya Sharma" autoFocus className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} aria-label="Full name" /></Field><Field label="Email" error={errs.email}><input placeholder="e.g. priya@company.com" type="email" className="input" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} aria-label="Email" /></Field>
       <div className="grid gap-4 sm:grid-cols-2"><Field label="Role"><Select aria-label="Role" value={f.role} onChange={(v) => setF({ ...f, role: v })} options={ROLES} /></Field><Field label="Job title"><input placeholder="e.g. Frontend Developer" className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} aria-label="Job title" /></Field></div></div></Modal>;
+}
+
+/** Plan, limits and how much of them is used; turns red when the organization is over a limit. */
+function PlanCard({ qs }: { qs: string }) {
+  const { data: u } = useApi<{ planLabel: string; users: number; maxUsers: number; projects: number; maxProjects: number }>(`/api/admin/org/plan${qs}`);
+  if (!u) return <Skeleton className="mb-4 h-[68px]" />;
+  const Meter = ({ label, n, max }: { label: string; n: number; max: number }) => {
+    const pct = Math.min(100, Math.round((n / Math.max(1, max)) * 100)); const full = n >= max;
+    return <div className="min-w-[180px] flex-1"><div className="mb-1 flex justify-between text-[12.5px]"><span className="text-muted">{label}</span><span className={n > max ? 'font-semibold text-danger' : full ? 'font-semibold text-warning' : ''}>{n} / {max}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-2)]"><div className={`h-full rounded-full ${n > max ? 'bg-danger' : full ? 'bg-warning' : 'bg-accent'}`} style={{ width: `${pct}%` }} /></div></div>;
+  };
+  const blocked = u.users >= u.maxUsers || u.projects >= u.maxProjects;
+  return <Card className="mb-4 p-4"><div className="flex flex-wrap items-center gap-x-8 gap-y-3"><div><div className="text-xs text-muted">Plan</div><div className="text-[15px] font-semibold">{u.planLabel}</div></div><Meter label="Active users" n={u.users} max={u.maxUsers} /><Meter label="Projects" n={u.projects} max={u.maxProjects} /></div>
+    {blocked && <p className="mt-3 text-[12.5px] text-warning">{u.users >= u.maxUsers ? 'User limit reached: new members cannot be invited. ' : ''}{u.projects >= u.maxProjects ? 'Project limit reached: new projects cannot be created. ' : ''}Ask the platform admin to upgrade the plan.</p>}</Card>;
 }
