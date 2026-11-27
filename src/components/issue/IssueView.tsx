@@ -134,7 +134,7 @@ export function IssueView({ issueKey, onClose, embedded }: { issueKey: string; o
                   </Link>
                 ))}
               </div>
-              {canEdit && <AddSubtask parent={issue} project={project} />}
+              {canEdit && (issue.type === 'epic' || masters?.types.some((t) => t.key === 'subtask')) && <AddSubtask parent={issue} project={project} />}
             </section>
           )}
 

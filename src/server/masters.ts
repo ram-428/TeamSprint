@@ -40,6 +40,9 @@ async function ensureSystemTypes(orgId: any) {
     update: { $set: { system: true, active: true }, $setOnInsert: { name: d.name, color: d.color, order: 1000 + i } },
     upsert: true,
   } }))).catch((e: any) => { if (e?.code !== 11000 && !e?.writeErrors?.every?.((w: any) => w.code === 11000)) throw e; return null; });
+  // Defaults that are no longer built-in (e.g. Subtask) become ordinary, editable types for existing orgs too.
+  const nonSys = DEFAULT_ISSUE_TYPES.filter((d) => !d.system).map((d) => d.key);
+  if (nonSys.length) await IssueTypeMaster.updateMany({ orgId, key: { $in: nonSys }, system: true }, { $set: { system: false } });
   if (res) systemTypesChecked.add(k);
 }
 
