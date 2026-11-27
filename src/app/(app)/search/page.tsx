@@ -1,7 +1,7 @@
 'use client';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Bookmark, ChevronDown, CircleHelp, Link2, ListFilter, Play, Save, Share2, Trash2, X } from 'lucide-react';
+import { Bookmark, ChevronDown, CircleHelp, Download, Link2, ListFilter, Play, Save, Share2, Trash2, X } from 'lucide-react';
 import clsx from 'clsx';
 import { api, errMsg, toast, useApi, ApiError } from '@/lib/api';
 import { Card, EmptyState, Field, ListSkeleton, Modal, Select, Spinner } from '@/components/ui';
@@ -159,6 +159,10 @@ function Search() {
             {res && res.total > res.items.length && <span className="text-muted">showing first {res.items.length}</span>}
             {mode === 'basic' && <Select aria-label="Sort by" className="!h-8 !w-40 text-[13px]" value={basic.sort || 'updated DESC'} onChange={(v) => setBasic({ ...basic, sort: v })} options={SORTS} />}
             <span className="key ml-auto max-w-full truncate rounded-lg border border-[var(--border)] bg-[var(--surface-2)] px-2.5 py-1 text-[11.5px] text-muted" title={applied}>{applied}</span>
+            {/* Exports exactly the applied query (all matching rows, not just the page shown), up to 5,000 rows. */}
+            {res && res.total > 0 && !err
+              ? <a className="btn btn-sm" href={`/api/issues/export?oql=${encodeURIComponent(applied)}`} download title={res.total > 5000 ? 'Exports the first 5,000 work items' : `Export ${res.total} work item${res.total === 1 ? '' : 's'} as CSV`}><Download size={14} /> Export CSV</a>
+              : <button className="btn btn-sm" disabled title="Nothing to export"><Download size={14} /> Export CSV</button>}
           </div>
           {err && mode === 'basic' ? <p role="alert" className="p-4 text-[13px] text-danger">⚠ {err}</p>
             : loading && !res ? <div className="p-4"><ListSkeleton /></div>

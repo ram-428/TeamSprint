@@ -47,7 +47,8 @@ export function resolver(user: AuthUser): Resolver {
   };
 }
 
-export async function runOql(user: AuthUser, oql: string, opts: { limit?: number; skip?: number } = {}) {
+/** Compiles an OQL query into a Mongo filter limited to live issues in projects the user can view, plus its sort. */
+export async function oqlQuery(user: AuthUser, oql: string): Promise<{ filter: Record<string, any>; sort: Record<string, 1 | -1> }> {
   let compiled;
   try { compiled = await compile(parse(oql), resolver(user)); } catch (e) {
     if (e instanceof OqlError) throw new AppError(400, 'OQL', e.message);
@@ -56,6 +57,11 @@ export async function runOql(user: AuthUser, oql: string, opts: { limit?: number
   const pids = await visibleProjectIds(user);
   const filter = { $and: [{ deletedAt: null, projectId: { $in: pids } }, compiled.filter] };
   const sort = Object.keys(compiled.sort).length ? compiled.sort : { updatedAt: -1 as const };
+  return { filter, sort };
+}
+
+export async function runOql(user: AuthUser, oql: string, opts: { limit?: number; skip?: number } = {}) {
+  const { filter, sort } = await oqlQuery(user, oql);
   const [items, total] = await Promise.all([
     Issue.find(filter).select('-description -watchers -votes -orgId').sort(sort).skip(opts.skip ?? 0).limit(Math.min(opts.limit ?? 100, 500)).lean<any[]>(),
     Issue.countDocuments(filter),
