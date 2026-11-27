@@ -61,7 +61,7 @@ export default function BoardPage({ params }: { params: Promise<{ key: string }>
   return (
     <div>
       {project.type === 'scrum' && (
-        <Card className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
+        <Card className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2">
           {!sprints ? <Skeleton className="h-9 w-full" /> : active ? (<>
             <ProgressRing value={total ? (done / total) * 100 : 0} size={36} stroke={4} label={<span className="text-[9.5px]">{Math.round(total ? (done / total) * 100 : 0)}%</span>} />
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-0.5"><h2 className="text-[15px] font-semibold">{active.name}</h2><span className="chip !text-success"><span className="pulse-dot h-1.5 w-1.5 rounded-full bg-success text-success" />Active</span>
@@ -72,10 +72,10 @@ export default function BoardPage({ params }: { params: Promise<{ key: string }>
         </Card>
       )}
 
-      <div className="mb-4 flex flex-wrap items-center gap-2.5">
-        <div className="relative w-full sm:w-auto"><Search size={15} className="absolute left-3 top-[11px] text-faint" /><input aria-label="Filter board" className="input !h-9 !w-full !pl-9 sm:!w-60" placeholder="Filter issues" value={q} onChange={(e) => setQ(e.target.value)} /></div>
-        <Select aria-label="Priority filter" className="!w-full sm:!w-40" value={prio} onChange={setPrio} options={[{ value: '', label: 'All priorities' }, ...PRIOS.map((p) => ({ value: p, label: p }))]} />
-        <Select aria-label="Type filter" className="!w-full sm:!w-40" value={type} onChange={setType} options={typeOptions} />
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="relative w-full sm:w-auto"><Search size={15} className="absolute left-3 top-[11px] text-faint" /><input aria-label="Filter board" className="input !h-9 !w-full !pl-9 sm:!w-48" placeholder="Filter issues" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+        <Select aria-label="Priority filter" className="!w-full sm:!w-36" value={prio} onChange={setPrio} options={[{ value: '', label: 'All priorities' }, ...PRIOS.map((p) => ({ value: p, label: p }))]} />
+        <Select aria-label="Type filter" className="!w-full sm:!w-32" value={type} onChange={setType} options={typeOptions} />
         <button aria-pressed={mine} onClick={() => setMine(!mine)} className={clsx('btn btn-sm', mine && '!border-[var(--accent)] !bg-[var(--accent-soft)]')}><Avatar user={me} size={18} /> Only my issues</button>
         {view === 'board' && <button aria-pressed={lanes} onClick={() => { setLanes(!lanes); try { localStorage.setItem(`orbit-lanes-${key}`, lanes ? '0' : '1'); } catch { /* ignore */ } }} className={clsx('btn btn-sm', lanes && '!border-[var(--accent)] !bg-[var(--accent-soft)]')}><Users size={14} /> Swimlanes by assignee</button>}
         <div className="inline-flex overflow-hidden rounded-lg border border-[var(--border)]" role="group" aria-label="View">
