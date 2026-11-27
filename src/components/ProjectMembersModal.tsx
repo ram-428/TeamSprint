@@ -4,11 +4,12 @@ import { Trash2, UserPlus } from 'lucide-react';
 import { api, errMsg, toast, useApi } from '@/lib/api';
 import { Avatar, Modal, Select, Spinner } from '@/components/ui';
 import { useMe } from '@/components/UserContext';
+import { useRoleOptions } from '@/components/useRoleOptions';
 
-const ROLES = [{ value: 'project_admin', label: 'Project Admin' }, { value: 'developer', label: 'Developer' }, { value: 'tester', label: 'Tester' }, { value: 'reporter', label: 'Reporter' }, { value: 'viewer', label: 'Viewer' }];
 
 /** Lists the members of a project and (for project admins) lets you add, re-role or remove them. */
 export function ProjectMembersModal({ open, onClose, project, reload }: { open: boolean; onClose: () => void; project: any; reload: () => Promise<void> | void }) {
+  const ROLES = useRoleOptions();
   const me = useMe();
   const canManage = !!project.abilities?.['project.manage_members'];
   const { data: users } = useApi<any[]>(open && canManage ? '/api/users' : null);

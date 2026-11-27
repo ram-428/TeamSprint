@@ -5,8 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   LayoutDashboard, FolderKanban, Search, Bell, Plus, Sun, Moon, Contrast, LogOut, Settings, Target, Gauge, ShieldCheck, Building2, ListChecks,
-  Command, Filter, Eye, X, UserCircle2, Menu, ChevronLeft, ChevronRight, Users,
-} from 'lucide-react';
+  Command, Filter, Eye, X, UserCircle2, Menu, ChevronLeft, ChevronRight, Users, KeyRound } from 'lucide-react';
 import clsx from 'clsx';
 import { Logo } from './Logo';
 import { UserProvider, type Me } from './UserContext';
@@ -77,7 +76,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
   ];
   const admin: NavItem[] = [
     ...(me.platformRole === 'super_admin' ? [{ href: '/admin/platform', label: 'Platform', icon: ShieldCheck }] : []),
-    ...(me.role === 'org_admin' || me.platformRole === 'super_admin' ? [{ href: '/admin/org', label: 'Organization', icon: Building2 }, { href: '/admin/masters', label: 'Masters', icon: ListChecks }] : []),
+    ...(me.role === 'org_admin' || me.platformRole === 'super_admin' ? [{ href: '/admin/org', label: 'Organization', icon: Building2 }, { href: '/admin/masters', label: 'Masters', icon: ListChecks }, { href: '/admin/permissions', label: 'Permissions', icon: KeyRound }] : []),
   ];
 
   const exitImpersonation = async () => { try { await api('/api/admin/platform/impersonate', { method: 'DELETE' }); window.location.href = '/admin/platform'; } catch (e) { toast.error(errMsg(e)); } };
@@ -85,7 +84,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
 
   // `narrow` = icon-only rail (collapsed desktop sidebar); the mobile drawer always shows labels
   const sidebar = (narrow: boolean) => (
-    <nav className={clsx('flex h-full flex-col gap-0.5 overflow-y-auto py-3', narrow ? 'px-2' : 'px-3')} aria-label="Main">
+    <nav className={clsx('flex h-full flex-col gap-0.5 overflow-y-auto pb-3 pt-2', narrow ? 'px-2' : 'px-3')} aria-label="Main">
       {nav.map((n) => <NavLink key={n.href} n={n} path={path} collapsed={narrow} />)}
       {admin.length > 0 && (narrow ? <div className="mx-1 my-2 border-t border-[var(--border)]" /> : <div className="px-2.5 pb-1 pt-4 text-[12px] font-semibold text-faint">Administration</div>)}
       {admin.map((n) => <NavLink key={n.href} n={n} path={path} collapsed={narrow} />)}
@@ -161,7 +160,7 @@ export function Shell({ me, children }: { me: Me; children: ReactNode }) {
         </AnimatePresence>
 
         <div className={clsx(ready && 'transition-[padding] duration-200', collapsed ? 'lg:pl-[56px]' : 'lg:pl-[200px]')} style={{ paddingTop: top + 56 }}>
-          <main className="px-4 pb-16 pt-5 sm:px-5 sm:pt-6" id="main">
+          <main className="px-4 pb-16 pt-3 sm:px-5 sm:pt-3" id="main">
             <motion.div key={path.split('/').slice(0, 3).join('/')} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.14, ease: 'easeOut' }}>{children}</motion.div>
           </main>
         </div>

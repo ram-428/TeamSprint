@@ -26,7 +26,7 @@ export function PasswordField({ label, value, onChange, error, autoComplete, met
   return (
     <Field label={label} error={error} hint={meter ? undefined : hint}>
       <div className="relative">
-        <input type={show ? 'text' : 'password'} autoComplete={autoComplete} autoFocus={autoFocus} aria-label={label} className={`input !pr-11 ${error ? 'err' : ''}`} value={value}
+        <input placeholder={`Enter ${label.toLowerCase()}`} type={show ? 'text' : 'password'} autoComplete={autoComplete} autoFocus={autoFocus} aria-label={label} className={`input !pr-11 ${error ? 'err' : ''}`} value={value}
           onChange={(e) => onChange(e.target.value)} onKeyUp={(e) => setCaps(e.getModifierState('CapsLock'))} />
         <button type="button" aria-label={show ? 'Hide password' : 'Show password'} className="absolute right-3 top-2.5 text-faint transition-colors hover:text-text" onClick={() => setShow((v) => !v)}>
           {show ? <EyeOff size={17} /> : <Eye size={17} />}

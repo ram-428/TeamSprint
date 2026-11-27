@@ -215,7 +215,7 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, message, confir
   return (
     <Modal open={open} onClose={onClose} title={title} width={460} footer={<><button className="btn" onClick={onClose}>Cancel</button><button disabled={busy || (!!typeToConfirm && typed !== typeToConfirm)} className={clsx('btn', danger ? 'btn-danger' : 'btn-primary')} onClick={async () => { setBusy(true); try { await onConfirm(); } finally { setBusy(false); } }}>{busy && <Spinner />}{confirmLabel}</button></>}>
       <div className="text-muted">{message}</div>
-      {typeToConfirm && <div className="mt-4"><label className="label">Type <b className="text-text">{typeToConfirm}</b> to confirm</label><input className="input" value={typed} onChange={(e) => setTyped(e.target.value)} autoFocus /></div>}
+      {typeToConfirm && <div className="mt-4"><label className="label">Type <b className="text-text">{typeToConfirm}</b> to confirm</label><input placeholder="Type here to confirm" className="input" value={typed} onChange={(e) => setTyped(e.target.value)} autoFocus /></div>}
     </Modal>
   );
 }

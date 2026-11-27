@@ -16,7 +16,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" data-theme="simple" className={`${inter.variable} ${mono.variable}`} suppressHydrationWarning>
       <head><script dangerouslySetInnerHTML={{ __html: themeInit }} /></head>
-      <body>
+      {/* Browser extensions (Gemini, Grammarly, ColorZilla…) add attributes to <body> before React loads; ignore those attribute-only mismatches. */}
+      <body suppressHydrationWarning>
         <TopLoader />
         <div className="aurora" aria-hidden><i /><i /><i /></div>
         {children}

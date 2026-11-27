@@ -4,7 +4,7 @@ import { Pencil, Plus, Trash2, UserCheck, UserX } from 'lucide-react';
 import { api, errMsg, toast, useApi, ApiError } from '@/lib/api';
 import { Avatar, Card, ConfirmDialog, Field, Modal, PageHeader, Pagination, Select, Skeleton, Spinner, Tabs, relTime } from '@/components/ui';
 import { useMe } from '@/components/UserContext';
-import { Forbidden, AuditTab } from '@/components/AdminShared';
+import { Forbidden, AuditTab, SelectOrgFirst } from '@/components/AdminShared';
 const ROLES = [{ value: 'member', label: 'Member' }, { value: 'guest', label: 'Guest' }];
 
 export default function OrgAdmin() {
@@ -17,7 +17,7 @@ export default function OrgAdmin() {
     <div className="mx-auto max-w-[1180px]">
       <PageHeader title={me.orgName || 'Organization'} subtitle="Members, roles and audit trail" />
       <div className="mb-5"><Tabs id="orgtabs" value={tab} onChange={setTab} tabs={[{ id: 'members', label: 'Members' }, { id: 'audit', label: 'Audit log' }]} /></div>
-      {isSuper && !orgId ? <Forbidden /> : tab === 'members' ? <Members key={orgId} orgId={orgId} /> : <AuditTab key={orgId} scope="org" orgId={orgId} />}
+      {isSuper && !orgId ? <SelectOrgFirst /> : tab === 'members' ? <Members key={orgId} orgId={orgId} /> : <AuditTab key={orgId} scope="org" orgId={orgId} />}
     </div>
   );
 }
@@ -49,14 +49,14 @@ function EditMember({ qs, m, onClose, onSaved }: { qs: string; m: any; onClose: 
   useEffect(() => { if (m) { setF({ name: m.name, email: m.email, title: m.title || '', role: m.role }); setErrs({}); } }, [m]);
   async function go() { setBusy(true); setErrs({}); try { await api(`/api/admin/org/members/${m._id}${qs}`, { method: 'PATCH', body: f }); toast.success('Member updated'); onSaved(); } catch (e) { if (e instanceof ApiError && e.fields) setErrs(e.fields); else toast.error(errMsg(e)); } finally { setBusy(false); } }
   return <Modal open={!!m} onClose={onClose} title="Edit member" width={480} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={go}>{busy && <Spinner />}Save</button></>}>
-    <div className="space-y-4"><Field label="Full name" error={errs.name}><input autoFocus className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} aria-label="Full name" /></Field><Field label="Email" error={errs.email}><input type="email" className="input" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} aria-label="Email" /></Field>
-      <div className="grid gap-4 sm:grid-cols-2"><Field label="Role"><Select aria-label="Role" value={f.role} onChange={(v) => setF({ ...f, role: v })} options={ROLES} /></Field><Field label="Job title"><input className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} aria-label="Job title" /></Field></div></div></Modal>;
+    <div className="space-y-4"><Field label="Full name" error={errs.name}><input placeholder="e.g. Priya Sharma" autoFocus className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} aria-label="Full name" /></Field><Field label="Email" error={errs.email}><input placeholder="e.g. priya@company.com" type="email" className="input" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} aria-label="Email" /></Field>
+      <div className="grid gap-4 sm:grid-cols-2"><Field label="Role"><Select aria-label="Role" value={f.role} onChange={(v) => setF({ ...f, role: v })} options={ROLES} /></Field><Field label="Job title"><input placeholder="e.g. Frontend Developer" className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} aria-label="Job title" /></Field></div></div></Modal>;
 }
 
 function Invite({ qs, open, onClose, onDone }: { qs: string; open: boolean; onClose: () => void; onDone: (r: any) => void }) {
   const [f, setF] = useState({ name: '', email: '', role: 'member', title: '' }); const [busy, setBusy] = useState(false); const [errs, setErrs] = useState<Record<string, string>>({});
   async function go() { setBusy(true); setErrs({}); try { onDone(await api(`/api/admin/org/members${qs}`, { body: f })); setF({ name: '', email: '', role: 'member', title: '' }); } catch (e) { if (e instanceof ApiError && e.fields) setErrs(e.fields); else toast.error(errMsg(e)); } finally { setBusy(false); } }
   return <Modal open={open} onClose={onClose} title="Invite member" width={480} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={go}>{busy && <Spinner />}Send invite</button></>}>
-    <div className="space-y-4"><Field label="Full name" error={errs.name}><input autoFocus className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} aria-label="Full name" /></Field><Field label="Email" error={errs.email}><input type="email" className="input" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} aria-label="Email" /></Field>
-      <div className="grid gap-4 sm:grid-cols-2"><Field label="Role"><Select aria-label="Role" value={f.role} onChange={(v) => setF({ ...f, role: v })} options={ROLES} /></Field><Field label="Job title"><input className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} aria-label="Job title" /></Field></div></div></Modal>;
+    <div className="space-y-4"><Field label="Full name" error={errs.name}><input placeholder="e.g. Priya Sharma" autoFocus className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} aria-label="Full name" /></Field><Field label="Email" error={errs.email}><input placeholder="e.g. priya@company.com" type="email" className="input" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} aria-label="Email" /></Field>
+      <div className="grid gap-4 sm:grid-cols-2"><Field label="Role"><Select aria-label="Role" value={f.role} onChange={(v) => setF({ ...f, role: v })} options={ROLES} /></Field><Field label="Job title"><input placeholder="e.g. Frontend Developer" className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} aria-label="Job title" /></Field></div></div></Modal>;
 }

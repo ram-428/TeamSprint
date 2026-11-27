@@ -41,13 +41,23 @@ const statusMasterSchema = S({ orgId: { type: oid, index: true }, id: String, na
 statusMasterSchema.index({ orgId: 1, id: 1 }, { unique: true });
 export const StatusMaster = model<any>('StatusMaster', statusMasterSchema);
 
+/** RBAC masters: the org's project roles and its permission schemes (see src/lib/permissions.ts). */
+const projectRoleMasterSchema = S({ orgId: { type: oid, index: true }, key: String, name: String, description: String, system: { type: Boolean, default: false }, order: { type: Number, default: 0 } }, opts);
+projectRoleMasterSchema.index({ orgId: 1, key: 1 }, { unique: true });
+export const ProjectRoleMaster = model<any>('ProjectRoleMaster', projectRoleMasterSchema);
+
+const GrantSub = S({ perm: String, holder: String, value: String, own: Boolean }, { _id: false });
+const permissionSchemeSchema = S({ orgId: { type: oid, index: true }, name: String, description: String, isDefault: { type: Boolean, default: false }, grants: [GrantSub] }, opts);
+export const PermissionScheme = model<any>('PermissionScheme', permissionSchemeSchema);
+
 const StatusSub = S({ id: String, name: String, category: String, color: String }, { _id: false });
 const projectSchema = S({
   orgId: { type: oid, index: true }, key: String, name: String, description: String,
   type: { type: String, default: 'scrum' }, // scrum|kanban|business|service_desk
   leadId: oid, color: String, icon: String, visibility: { type: String, default: 'org' }, // private|org
   issueCounter: { type: Number, default: 0 }, archived: { type: Boolean, default: false },
-  members: [{ userId: oid, role: String, _id: false }], // project_admin|developer|tester|reporter|viewer
+  members: [{ userId: oid, role: String, _id: false }], // role key from ProjectRoleMaster (project_admin|developer|tester|reporter|viewer|custom)
+  permissionSchemeId: oid, // null = the org's default permission scheme
   statuses: [StatusSub], wip: { type: Map, of: Number, default: {} },
   components: [String], versions: [{ id: String, name: String, releaseDate: Date, released: Boolean, _id: false }],
   starredBy: [oid],

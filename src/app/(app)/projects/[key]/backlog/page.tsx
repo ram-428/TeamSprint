@@ -142,6 +142,21 @@ export default function BacklogPage({ params }: { params: Promise<{ key: string 
     } catch (e) { toast.error(errMsg(e)); } finally { setMoving(false); }
   }
 
+  // Map the selected work items to an epic (or take them out of their epic) in one go.
+  async function setEpicSelected(epicId: string) {
+    if (!epicId || !selected_.length) return; const target = epicId === 'none' ? null : epicId;
+    const keys = selected_.filter((k) => String(byKey.get(k)?.epicId ?? '') !== String(target ?? ''));
+    if (!keys.length) { toast.info(target ? 'Selected issues are already in that epic' : 'Selected issues have no epic'); return; }
+    setMoving(true);
+    try {
+      const r = await api<{ succeeded: number; results: { ok: boolean; error?: string }[] }>('/api/issues/bulk', { body: { keys, patch: { epicId: target } } });
+      const failed = keys.length - r.succeeded; const n = `${r.succeeded} issue${r.succeeded === 1 ? '' : 's'}`;
+      const name = target ? epics.find((e) => e._id === target)?.summary : null;
+      failed ? toast.error(`Updated ${r.succeeded}, ${failed} failed: ${r.results.find((x) => !x.ok)?.error ?? ''}`) : toast.success(name ? `Added ${n} to epic “${name}”` : `Removed ${n} from their epic`);
+      setSel_([]); mutate(); invalidate('/api/issues');
+    } catch (e) { toast.error(errMsg(e)); } finally { setMoving(false); }
+  }
+
   const activeIssue = active ? byKey.get(active) : null;
   const hasFilters = !!q || !!epicF || assignees.length > 0;
   const visibleKeys = (ks: string[] = []) => ks.filter((k) => { const i = byKey.get(k); return !!i && match(i); });
@@ -195,6 +210,9 @@ export default function BacklogPage({ params }: { params: Promise<{ key: string 
             <span className="text-muted">Move to</span>
             {planning.map((s) => <button key={s._id} className="btn btn-sm" disabled={moving} onClick={() => moveSelected(String(s._id))}>{s.name}{s.state === 'active' && <span className="text-success"> ●</span>}</button>)}
             <button className="btn btn-sm" disabled={moving} onClick={() => moveSelected('backlog')}>Backlog</button>
+            <span className="mx-1 h-5 w-px bg-[var(--border)]" />
+            <Select aria-label="Set epic for selected" className="!w-44" disabled={moving} value="" onChange={setEpicSelected} placeholder="Epic…"
+              options={[...epics.map((e) => ({ value: e._id, label: `${e.key} · ${e.summary}` })), { value: 'none', label: 'No epic (remove)' }]} />
             {moving && <Spinner />}
             <button className="btn btn-ghost btn-sm" onClick={() => setSel_([])} title="Esc">Clear</button>
           </motion.div>
@@ -222,7 +240,7 @@ function StartSprint({ sprint, onClose, count, projectKey, onDone }: { sprint: a
     <Modal open={!!sprint} onClose={onClose} title="Start sprint" width={500} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={go}>{busy && <Spinner />}Start</button></>}>
       <p className="mb-4 text-muted">{count} issues will be included in this sprint.</p>
       <div className="space-y-4">{err && <div role="alert" className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-[13px] text-danger">{err}</div>}
-        <Field label="Sprint name"><input className="input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Sprint name" /></Field>
+        <Field label="Sprint name"><input placeholder="e.g. ACME Sprint 7" className="input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Sprint name" /></Field>
         <Field label="Duration"><div className="flex gap-2">{[1, 2, 3, 4].map((w) => <button key={w} onClick={() => setWeeks(w)} className={clsx('btn flex-1', weeks === w && '!border-[var(--accent)] !bg-[var(--accent-soft)]')}>{w} week{w > 1 && 's'}</button>)}</div></Field>
         <Field label="Sprint goal"><textarea className="input" rows={2} value={goal} onChange={(e) => setGoal(e.target.value)} placeholder="What do we want to achieve?" aria-label="Sprint goal" /></Field></div>
     </Modal>

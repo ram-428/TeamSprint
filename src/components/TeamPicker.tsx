@@ -118,7 +118,12 @@ export function TeamFormModal({ open, team, onClose, onSaved }: { open: boolean;
     try {
       const body = { name: f.name, description: f.description, color: f.color, memberIds: f.memberIds, leadId: f.leadId || null, projectIds: f.projectIds };
       let id = team?._id;
-      if (team) await api(`/api/teams/${team._id}`, { method: 'PATCH', body });
+      if (team) {
+        const { projectIds, ...details } = body;
+        const originalIds = new Set(team.projects.map((p) => p._id));
+        const projectsChanged = projectIds.length !== originalIds.size || projectIds.some((id) => !originalIds.has(id));
+        await api(`/api/teams/${team._id}`, { method: 'PATCH', body: projectsChanged ? body : details });
+      }
       else id = (await api<{ _id: string }>('/api/teams', { body }))._id;
       invalidate('/api/teams'); toast.success(team ? 'Team updated' : `Team "${f.name}" created`); onSaved(id);
     } catch (e) { if (e instanceof ApiError && e.fields) setErrs(e.fields); else toast.error(errMsg(e)); }

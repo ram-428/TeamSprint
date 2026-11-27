@@ -35,13 +35,12 @@ export function MastersTab({ orgId }: { orgId: string }) {
       <p className="mb-3 text-[13px] text-muted">{kind === 'types' ? 'Issue types offered when creating or editing an issue in any project of this organization.' : 'Statuses used for issues and as board columns, in this order, in every project of this organization.'}</p>
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[640px] text-[13.5px]">
-          <thead className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wider text-muted"><tr><th className="p-4">Name</th>{kind === 'statuses' && <th>Category</th>}<th>Issues</th><th>Active</th><th className="pr-4 text-right">Action</th></tr></thead>
+          <thead className="border-b border-[var(--border)] text-left text-xs uppercase tracking-wider text-muted"><tr><th className="p-4">Name</th>{kind === 'statuses' && <th>Category</th>}<th>Active</th><th className="pr-4 text-right">Action</th></tr></thead>
           <tbody>
-            {!data ? <tr><td colSpan={5} className="p-6"><Skeleton className="h-20" /></td></tr> : data.map((i, idx) => (
+            {!data ? <tr><td colSpan={kind === 'statuses' ? 4 : 3} className="p-6"><Skeleton className="h-20" /></td></tr> : data.map((i, idx) => (
               <tr key={idOf(i)} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]">
                 <td className="p-3"><div className="flex items-center gap-2.5"><span className="h-3 w-3 shrink-0 rounded-full" style={{ background: i.color }} /><span className={`font-medium ${i.active ? '' : 'text-faint line-through'}`}>{i.name}</span>{i.system && <span className="chip">built-in</span>}</div></td>
                 {kind === 'statuses' && <td className="text-muted">{catLabel(i.category)}</td>}
-                <td className="text-muted">{i.used}</td>
                 <td><label className="inline-flex cursor-pointer items-center" title={i.system ? 'Built-in types are always active — the app relies on them' : i.active ? 'Disable (hide from Create issue)' : 'Enable'}><input type="checkbox" className="accent-[var(--accent)]" checked={i.active} disabled={!!i.system} aria-label={`${i.name} active`} onChange={(e) => patch(i, { active: e.target.checked })} /></label></td>
                 <td className="pr-3"><div className="flex items-center justify-end gap-1.5">
                   <button className="btn btn-sm" title="Move up" aria-label="Move up" disabled={idx === 0} onClick={() => move(idx, -1)}><ArrowUp size={14} /></button>
@@ -56,7 +55,7 @@ export function MastersTab({ orgId }: { orgId: string }) {
       </Card>
       <MasterForm key={`${kind}-${edit ? idOf(edit) ?? 'new' : 'none'}`} kind={kind} base={base} qs={qs} item={edit} idOf={idOf} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); changed(); }} />
       <ConfirmDialog open={!!del} onClose={() => setDel(null)} danger title={kind === 'types' ? 'Delete issue type' : 'Delete status'} confirmLabel="Delete"
-        message={<>Delete <b>{del?.name}</b>? {del?.used ? `${del.used} issue(s) still use it, so this will be refused.` : 'This cannot be undone.'}</>}
+        message={<>Delete <b>{del?.name}</b>? This cannot be undone. If any issue still uses it, the delete will be refused.</>}
         onConfirm={async () => { try { await api(`${base}/${idOf(del)}${qs}`, { method: 'DELETE' }); toast.success('Deleted'); setDel(null); changed(); } catch (e) { toast.error(errMsg(e)); setDel(null); } }} />
     </div>
   );
@@ -81,7 +80,7 @@ function MasterForm({ kind, base, qs, item, idOf, onClose, onSaved }: { kind: Ki
   return (
     <Modal open={!!item} onClose={onClose} title={`${isNew ? 'Add' : 'Edit'} ${what}`} width={440} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={go}>{busy && <Spinner />}Save</button></>}>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); go(); }} noValidate>
-        <Field label="Name" error={errs.name}><input className={`input ${errs.name ? 'err' : ''}`} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoFocus aria-label="Name" /></Field>
+        <Field label="Name" error={errs.name}><input placeholder={kind === 'types' ? 'e.g. Improvement' : 'e.g. In Review'} className={`input ${errs.name ? 'err' : ''}`} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoFocus aria-label="Name" /></Field>
         {kind === 'statuses' && <Field label="Category" error={errs.category} hint="Decides whether issues in this status count as to do, in progress or done in reports."><Select value={f.category} onChange={(v) => setF({ ...f, category: v })} options={CATEGORIES} aria-label="Category" /></Field>}
         <Field label="Colour" error={errs.color}><input type="color" className="h-9 w-16 cursor-pointer rounded border border-[var(--border)] bg-transparent p-1" value={f.color} onChange={(e) => setF({ ...f, color: e.target.value })} aria-label="Colour" /></Field>
       </form>

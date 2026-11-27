@@ -23,6 +23,27 @@ export async function ensureMasters(orgId: any): Promise<void> {
   if (!s) ops.push(StatusMaster.bulkWrite(STATUSES.map((d, order) => ({ updateOne: { filter: { orgId, id: d.id }, update: { $setOnInsert: { ...d, active: true, order } }, upsert: true } }))));
   // A concurrent request may seed the same rows first; that duplicate-key error (11000) is harmless.
   await Promise.all(ops.map((p) => p.catch((e: any) => { if (e?.code !== 11000 && !e?.writeErrors?.every?.((w: any) => w.code === 11000)) throw e; })));
+  if (t) await ensureSystemTypes(orgId);
+}
+
+const systemTypesChecked = new Set<string>();
+/**
+ * Organizations created before a type became built-in (e.g. Bug) keep it as an ordinary, removable type.
+ * Once per org per server process: (re)create every built-in type that is missing, mark it built-in and active.
+ * Names and colours the admin chose are kept.
+ */
+async function ensureSystemTypes(orgId: any) {
+  const k = String(orgId); if (systemTypesChecked.has(k)) return;
+  const sys = DEFAULT_ISSUE_TYPES.filter((d) => d.system);
+  const res = await IssueTypeMaster.bulkWrite(sys.map((d, i) => ({ updateOne: {
+    filter: { orgId, key: d.key },
+    update: { $set: { system: true, active: true }, $setOnInsert: { name: d.name, color: d.color, order: 1000 + i } },
+    upsert: true,
+  } }))).catch((e: any) => { if (e?.code !== 11000 && !e?.writeErrors?.every?.((w: any) => w.code === 11000)) throw e; return null; });
+  // Defaults that are no longer built-in (e.g. Subtask) become ordinary, editable types for existing orgs too.
+  const nonSys = DEFAULT_ISSUE_TYPES.filter((d) => !d.system).map((d) => d.key);
+  if (nonSys.length) await IssueTypeMaster.updateMany({ orgId, key: { $in: nonSys }, system: true }, { $set: { system: false } });
+  if (res) systemTypesChecked.add(k);
 }
 
 export async function orgIssueTypes(orgId: any, opts: { all?: boolean } = {}): Promise<TypeDef[]> {

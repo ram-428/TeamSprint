@@ -50,7 +50,7 @@ export function CreateIssueModal({ open, onClose, projectKey, defaults, onCreate
     try {
       const r = await api<{ key: string }>('/api/issues', { body: {
         project: pk, type: cap.type || f.type, summary: cap.summary, description: f.description || undefined, priority: cap.priority || f.priority, assigneeId: assigneeId || null,
-        labels: cap.labels, points: cap.points ?? null, status: f.status || undefined, dueDate: f.dueDate || null, epicId: f.epicId || null, sprintId: f.sprintId || null, teamId: f.teamId || null,
+        labels: cap.labels, points: cap.points ?? null, status: f.status || undefined, dueDate: f.dueDate || null, epicId: (cap.type || f.type) === 'epic' ? null : f.epicId || null, sprintId: f.sprintId || null, teamId: f.teamId || null,
         attachments: atts.length ? atts.map(({ name, url, publicId, resourceType, format, bytes, width, height }) => ({ name, url, publicId, resourceType, format, bytes, width, height })) : undefined,
       } });
       invalidate('/api/issues'); invalidate('/api/projects'); invalidate('/api/dashboard');
@@ -83,7 +83,8 @@ export function CreateIssueModal({ open, onClose, projectKey, defaults, onCreate
           <Field label="Status" error={errs.status}><Select value={f.status} onChange={(v) => setF({ ...f, status: v })} options={statusOptions.length ? statusOptions : [{ value: f.status, label: 'Loading…' }]} aria-label="Status" /></Field>
           <Field label="Due date"><input type="date" className="input" value={f.dueDate} onChange={(e) => setF({ ...f, dueDate: e.target.value })} aria-label="Due date" /></Field>
           <Field label="Team" error={errs.teamId}><TeamPicker projectKey={pk} value={f.teamId} onChange={(v) => setF((x: any) => ({ ...x, teamId: v }))} /></Field>
-          {(epics?.items?.length ?? 0) > 0 && <Field label="Epic"><Select value={f.epicId} onChange={(v) => setF({ ...f, epicId: v })} options={[{ value: '', label: 'None' }, ...(epics?.items || []).map((e) => ({ value: e._id, label: `${e.key} · ${e.summary}` }))]} aria-label="Epic" /></Field>}
+          {/* Epic → Story / Task / Bug: an epic itself cannot be put under an epic */}
+          {f.type !== 'epic' && (epics?.items?.length ?? 0) > 0 && <Field label="Epic" error={errs.epicId}><Select value={f.epicId} onChange={(v) => setF({ ...f, epicId: v })} options={[{ value: '', label: 'None' }, ...(epics?.items || []).map((e) => ({ value: e._id, label: `${e.key} · ${e.summary}` }))]} aria-label="Epic" /></Field>}
           {isScrum && (sprints?.filter((s) => s.state !== 'closed').length ?? 0) > 0 && <Field label="Sprint"><Select value={f.sprintId} onChange={(v) => setF({ ...f, sprintId: v })} options={[{ value: '', label: 'Backlog' }, ...(sprints || []).filter((s) => s.state !== 'closed').map((s) => ({ value: s._id, label: s.name }))]} aria-label="Sprint" /></Field>}
         </div>
       </form>

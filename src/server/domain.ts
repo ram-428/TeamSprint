@@ -31,6 +31,19 @@ async function assertIssueType(orgId: any, type: string, current?: string) {
   if (!(await activeTypeKeys(orgId)).includes(type)) throw new AppError(400, 'BAD_TYPE', 'This issue type is not available. Ask your admin to enable it.', { type: 'Not an available issue type' });
 }
 
+/**
+ * Hierarchy rule: Epic → Story / Task / Bug. Only those can be put under an epic; an epic (or a sub-task) cannot,
+ * and the target must be a live epic in the same project. An item may also have no epic at all.
+ */
+async function assertEpicLink(project: any, type: string, epicId: any, selfId?: any) {
+  if (!epicId) return;
+  if (type === 'epic') throw new AppError(400, 'BAD_EPIC', 'An epic cannot be placed under another epic', { epicId: 'Epics cannot have an epic' });
+  if (type === 'subtask') throw new AppError(400, 'BAD_EPIC', 'A sub-task follows its parent issue and cannot be linked to an epic', { epicId: 'Not allowed for sub-tasks' });
+  if (!mongoose.isValidObjectId(String(epicId)) || (selfId && String(epicId) === String(selfId))) throw new AppError(400, 'BAD_EPIC', 'Epic not found', { epicId: 'Epic not found' });
+  const e = await Issue.exists({ _id: epicId, projectId: project._id, type: 'epic', deletedAt: null });
+  if (!e) throw new AppError(400, 'BAD_EPIC', 'Epic not found in this project', { epicId: 'Epic not found' });
+}
+
 export function requirePerm(user: AuthUser, perm: string, p: ProjectLike, owns = false) {
   if (!can(user, perm, p, owns)) throw forbidden();
 }
@@ -68,6 +81,14 @@ export async function applyIssueUpdate(user: AuthUser, issue: any, project: any,
     issue.resolution = st.category === 'done' ? patch.resolution || (st.id === 'cancelled' ? "Won't Do" : 'Done') : undefined;
   }
   if (patch.type) await assertIssueType(project.orgId, patch.type, issue.type);
+  // Hierarchy checks, using the type the issue will have after this update.
+  const nextType = patch.type || issue.type;
+  if (patch.type && patch.type !== issue.type && issue.type === 'epic') {
+    const kids = await Issue.countDocuments({ epicId: issue._id, deletedAt: null });
+    if (kids) throw new AppError(400, 'BAD_TYPE', `This epic has ${kids} work item${kids > 1 ? 's' : ''}. Move ${kids > 1 ? 'them' : 'it'} out of the epic before changing its type`);
+  }
+  if ('epicId' in patch) await assertEpicLink(project, nextType, patch.epicId, issue._id);
+  else if (nextType === 'epic' && issue.epicId) patch = { ...patch, epicId: null }; // becoming an epic: it leaves its parent epic
   const simple = ['summary', 'description', 'priority', 'type', 'points', 'dueDate', 'startDate', 'labels', 'components', 'fixVersion', 'flagged', 'estimate'] as const;
   for (const f of simple) if (f in patch) issue[f] = patch[f] === '' ? undefined : patch[f];
   if ('assigneeId' in patch) {
@@ -133,11 +154,13 @@ export async function runAutomation(project: any, issue: any, trigger: string, u
 export async function createIssue(user: AuthUser, project: any, data: Record<string, any>) {
   requirePerm(user, 'issue.create', project);
   await assertIssueType(project.orgId, data.type || 'task');
+  // Validate links before reserving an issue number, so a rejected create doesn't skip a key.
+  if (data.teamId) await assertTeam(project.orgId, data.teamId);
+  await assertEpicLink(project, data.type || 'task', data.epicId);
   const p = await Project.findOneAndUpdate({ _id: project._id }, { $inc: { issueCounter: 1 } }, { new: true }).lean<any>();
   const number = p.issueCounter;
   const first = (data.status && project.statuses.find((s: any) => s.id === data.status)) || project.statuses[0];
   if (data.status && first.id !== data.status) throw new AppError(400, 'BAD_STATUS', 'Unknown status for this project');
-  if (data.teamId) await assertTeam(project.orgId, data.teamId);
   const last = await Issue.findOne({ projectId: project._id }).sort({ rank: -1 }).select('rank').lean<any>();
   const issue = await Issue.create({
     orgId: project.orgId, projectId: project._id, projectKey: project.key, number, key: `${project.key}-${number}`,

@@ -5,6 +5,7 @@ import { getUser, type AuthUser } from './auth';
 import { Audit, Notification, Activity } from './models';
 import mongoose from 'mongoose';
 import { can } from './rbac';
+import { loadAccess } from './access';
 
 export class AppError extends Error {
   constructor(public status: number, public code: string, message: string, public fields?: Record<string, string>) { super(message); }
@@ -28,6 +29,7 @@ export function route(handler: Handler, opts: { auth?: boolean } = {}) {
       if (opts.auth !== false) {
         user = await getUser();
         if (!user) throw new AppError(401, 'UNAUTHENTICATED', 'Please sign in');
+        await loadAccess(user.orgId); // permission schemes for can()
       }
       const out = await handler(req, { user: user as AuthUser, params });
       if (out instanceof Response) return out as NextResponse;

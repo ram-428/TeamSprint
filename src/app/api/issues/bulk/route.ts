@@ -4,7 +4,7 @@ import { loadIssue, applyIssueUpdate, requirePerm } from '@/server/domain';
 
 const schema = z.object({
   keys: z.array(z.string()).min(1).max(200),
-  patch: z.object({ status: z.string().optional(), assigneeId: z.string().nullable().optional(), priority: z.enum(['Highest', 'High', 'Medium', 'Low', 'Lowest']).optional(), sprintId: z.string().nullable().optional(), labels: z.array(z.string()).optional() }),
+  patch: z.object({ status: z.string().optional(), assigneeId: z.string().nullable().optional(), priority: z.enum(['Highest', 'High', 'Medium', 'Low', 'Lowest']).optional(), sprintId: z.string().nullable().optional(), epicId: z.string().nullable().optional(), labels: z.array(z.string()).optional() }),
   delete: z.boolean().optional(),
 });
 
