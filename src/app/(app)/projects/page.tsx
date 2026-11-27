@@ -112,10 +112,10 @@ function CreateProject({ open, onClose }: { open: boolean; onClose: () => void }
         {step === 1 && <div className="space-y-4">
           <Field label="Project name" error={errs.name}><input autoFocus className={clsx('input', errs.name && 'err')} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value, key: keyTouched ? f.key : suggest(e.target.value) })} placeholder="e.g. Customer Portal" aria-label="Project name" /></Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Key" error={errs.key} hint="Prefix for issue keys, e.g. PORT-12"><input className={clsx('input key', errs.key && 'err')} value={f.key} onChange={(e) => { setKeyTouched(true); setF({ ...f, key: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }); }} maxLength={10} aria-label="Project key" /></Field>
+            <Field label="Key" error={errs.key} hint="Prefix for issue keys, e.g. PORT-12"><input placeholder="e.g. ACME" className={clsx('input key', errs.key && 'err')} value={f.key} onChange={(e) => { setKeyTouched(true); setF({ ...f, key: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') }); }} maxLength={10} aria-label="Project key" /></Field>
             <Field label="Visibility"><Select aria-label="Visibility" value={f.visibility} onChange={(v) => setF({ ...f, visibility: v })} options={[{ value: 'org', label: 'Everyone in the organization' }, { value: 'private', label: 'Private — members only' }]} /></Field>
           </div>
-          <Field label="Description"><textarea className="input" rows={2} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} aria-label="Description" /></Field>
+          <Field label="Description"><textarea placeholder="What is this project about? (optional)" className="input" rows={2} value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} aria-label="Description" /></Field>
           <div><label className="label">Colour</label><div className="flex gap-2">{COLORS.map((c) => <button key={c} aria-label={`Colour ${c}`} onClick={() => setF({ ...f, color: c })} className="h-8 w-8 rounded-full transition-transform hover:scale-110" style={{ background: c, boxShadow: f.color === c ? `0 0 0 2px var(--bg), 0 0 0 4px ${c}` : undefined }} />)}</div></div>
         </div>}
         {step === 2 && <div><p className="mb-3 text-muted">Add teammates. You'll be the Project Admin. Everyone added gets Developer access (guests become Reporters).</p>

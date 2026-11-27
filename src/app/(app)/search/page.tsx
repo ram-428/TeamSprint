@@ -170,7 +170,7 @@ function Search() {
 
       <IssueDrawer issueKey={selected} onClose={() => setSel(null)} />
       <Modal open={save} onClose={() => setSave(false)} title="Save filter" width={440} footer={<><button className="btn" onClick={() => setSave(false)}>Cancel</button><button className="btn btn-primary" disabled={busy || name.trim().length < 2} onClick={saveFilter}>{busy && <Spinner />}Save</button></>}>
-        <div className="space-y-4"><Field label="Name"><input autoFocus className="input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Filter name" /></Field><Field label="Query"><div className="input !h-auto break-all py-2 font-mono text-[12.5px]">{applied || oql}</div></Field>
+        <div className="space-y-4"><Field label="Name"><input placeholder="e.g. My team’s open bugs" autoFocus className="input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Filter name" /></Field><Field label="Query"><div className="input !h-auto break-all py-2 font-mono text-[12.5px]">{applied || oql}</div></Field>
           <label className="flex cursor-pointer items-center gap-2 text-[13.5px]"><input type="checkbox" checked={shared} onChange={(e) => setShared(e.target.checked)} className="accent-[var(--accent)]" /> Share with my organization</label></div></Modal>
     </div>
   );

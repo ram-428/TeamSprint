@@ -80,7 +80,7 @@ function MasterForm({ kind, base, qs, item, idOf, onClose, onSaved }: { kind: Ki
   return (
     <Modal open={!!item} onClose={onClose} title={`${isNew ? 'Add' : 'Edit'} ${what}`} width={440} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={go}>{busy && <Spinner />}Save</button></>}>
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); go(); }} noValidate>
-        <Field label="Name" error={errs.name}><input className={`input ${errs.name ? 'err' : ''}`} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoFocus aria-label="Name" /></Field>
+        <Field label="Name" error={errs.name}><input placeholder={kind === 'types' ? 'e.g. Improvement' : 'e.g. In Review'} className={`input ${errs.name ? 'err' : ''}`} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoFocus aria-label="Name" /></Field>
         {kind === 'statuses' && <Field label="Category" error={errs.category} hint="Decides whether issues in this status count as to do, in progress or done in reports."><Select value={f.category} onChange={(v) => setF({ ...f, category: v })} options={CATEGORIES} aria-label="Category" /></Field>}
         <Field label="Colour" error={errs.color}><input type="color" className="h-9 w-16 cursor-pointer rounded border border-[var(--border)] bg-transparent p-1" value={f.color} onChange={(e) => setF({ ...f, color: e.target.value })} aria-label="Colour" /></Field>
       </form>

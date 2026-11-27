@@ -34,11 +34,11 @@ export default function RegisterPage() {
         <p className="mb-6 mt-1 text-muted">Start planning in under a minute. Free forever for small teams.</p>
         <form onSubmit={submit} className="space-y-4" noValidate>
           {err && <div role="alert" className="rounded-xl border border-danger/40 bg-danger/10 px-3.5 py-2.5 text-[13.5px] text-danger">{err}</div>}
-          <Field label="Your name" error={fields.name}><input className={`input ${fields.name ? 'err' : ''}`} value={f.name} onChange={set('name')} autoFocus /></Field>
-          <Field label="Work email" error={fields.email}><input type="email" className={`input ${fields.email ? 'err' : ''}`} value={f.email} onChange={set('email')} /></Field>
+          <Field label="Your name" error={fields.name}><input placeholder="Your full name" className={`input ${fields.name ? 'err' : ''}`} value={f.name} onChange={set('name')} autoFocus /></Field>
+          <Field label="Work email" error={fields.email}><input placeholder="you@company.com" type="email" className={`input ${fields.email ? 'err' : ''}`} value={f.email} onChange={set('email')} /></Field>
           <Field label="Workspace name" error={fields.orgName}><input className={`input ${fields.orgName ? 'err' : ''}`} placeholder="Acme Inc" value={f.orgName} onChange={set('orgName')} /></Field>
           <Field label="Password" error={fields.password}>
-            <input type="password" autoComplete="new-password" className={`input ${fields.password ? 'err' : ''}`} value={f.password} onChange={set('password')} />
+            <input placeholder="At least 10 characters" type="password" autoComplete="new-password" className={`input ${fields.password ? 'err' : ''}`} value={f.password} onChange={set('password')} />
             <div className="mt-2 flex gap-1" aria-hidden>{[0, 1, 2, 3, 4].map((i) => <motion.span key={i} className="h-1 flex-1 rounded-full" animate={{ background: i < s ? colors[s] : 'var(--border)' }} />)}</div>
             <p className="mt-1 text-xs" style={{ color: f.password ? colors[s] : 'var(--text-faint)' }}>{f.password ? labels[s] : 'Min 10 characters, one capital letter and one number'}</p>
           </Field>

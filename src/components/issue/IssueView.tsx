@@ -215,7 +215,7 @@ function Sla({ due }: { due: string }) {
 function InlineText({ value, onSave, disabled, className, label }: { value: string; onSave: (v: string) => void; disabled?: boolean; className?: string; label: string }) {
   const [edit, setEdit] = useState(false); const [v, setV] = useState(value);
   useEffect(() => setV(value), [value]);
-  if (edit) return <input aria-label={label} autoFocus className={clsx('input !h-auto !py-1.5', className)} value={v} onChange={(e) => setV(e.target.value)} onBlur={() => { setEdit(false); if (v.trim() && v !== value) onSave(v.trim()); else setV(value); }} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { setV(value); setEdit(false); } }} />;
+  if (edit) return <input placeholder="What needs to be done?" aria-label={label} autoFocus className={clsx('input !h-auto !py-1.5', className)} value={v} onChange={(e) => setV(e.target.value)} onBlur={() => { setEdit(false); if (v.trim() && v !== value) onSave(v.trim()); else setV(value); }} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { setV(value); setEdit(false); } }} />;
   return <h2 onClick={() => !disabled && setEdit(true)} className={clsx(className, !disabled && 'cursor-text rounded-lg px-2 py-1 -mx-2 hover:bg-[var(--surface)]')} tabIndex={disabled ? undefined : 0} onKeyDown={(e) => e.key === 'Enter' && !disabled && setEdit(true)}>{value}</h2>;
 }
 function InlineNumber({ value, onSave, disabled }: { value?: number; onSave: (v: number | null) => void; disabled?: boolean }) {
@@ -238,7 +238,7 @@ function Description({ value, onSave, disabled, compact }: { value: string; onSa
     <section>
       <h3 className={clsx(compact ? 'mb-0.5' : 'mb-2', 'text-[13px] font-semibold uppercase tracking-wider text-muted')}>Description</h3>
       {edit ? (
-        <div><textarea autoFocus aria-label="Description" className={clsx('input', compact ? 'min-h-[120px]' : 'min-h-[170px]')} value={v} onChange={(e) => setV(e.target.value)} />
+        <div><textarea placeholder="Add a description…" autoFocus aria-label="Description" className={clsx('input', compact ? 'min-h-[120px]' : 'min-h-[170px]')} value={v} onChange={(e) => setV(e.target.value)} />
           <div className="mt-2 flex gap-2"><button className="btn btn-primary btn-sm" onClick={() => { setEdit(false); if (v !== value) onSave(v); }}>Save</button><button className="btn btn-sm" onClick={() => { setV(value); setEdit(false); }}>Cancel</button></div></div>
       ) : value ? (
         <div className={clsx('prose-orbit text-[14.5px] text-[var(--text)]', compact ? 'rounded-lg leading-snug [&_p]:mb-1 [&_p:last-child]:mb-0' : 'rounded-xl leading-relaxed', !disabled && 'cursor-text -mx-2 px-2 hover:bg-[var(--surface)]', compact ? 'py-0.5' : 'py-1')} onClick={(e) => { if ((e.target as HTMLElement).closest('a')) return; !disabled && setEdit(true); }} dangerouslySetInnerHTML={{ __html: html }} />

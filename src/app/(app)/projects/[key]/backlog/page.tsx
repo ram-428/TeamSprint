@@ -240,7 +240,7 @@ function StartSprint({ sprint, onClose, count, projectKey, onDone }: { sprint: a
     <Modal open={!!sprint} onClose={onClose} title="Start sprint" width={500} footer={<><button className="btn" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy} onClick={go}>{busy && <Spinner />}Start</button></>}>
       <p className="mb-4 text-muted">{count} issues will be included in this sprint.</p>
       <div className="space-y-4">{err && <div role="alert" className="rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-[13px] text-danger">{err}</div>}
-        <Field label="Sprint name"><input className="input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Sprint name" /></Field>
+        <Field label="Sprint name"><input placeholder="e.g. ACME Sprint 7" className="input" value={name} onChange={(e) => setName(e.target.value)} aria-label="Sprint name" /></Field>
         <Field label="Duration"><div className="flex gap-2">{[1, 2, 3, 4].map((w) => <button key={w} onClick={() => setWeeks(w)} className={clsx('btn flex-1', weeks === w && '!border-[var(--accent)] !bg-[var(--accent-soft)]')}>{w} week{w > 1 && 's'}</button>)}</div></Field>
         <Field label="Sprint goal"><textarea className="input" rows={2} value={goal} onChange={(e) => setGoal(e.target.value)} placeholder="What do we want to achieve?" aria-label="Sprint goal" /></Field></div>
     </Modal>
